@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncXAccount } from '@/lib/database-x-accounts';
 import { SyncXAccountRequest, XSyncType } from '@/types/x-account';
-import jwt from 'jsonwebtoken';
+import { requireAuth } from '@/lib/auth-helpers';
 
 /**
  * 同步X账号数据
@@ -15,27 +15,13 @@ export async function POST(
     const { id } = await params;
     const syncData: SyncXAccountRequest = await request.json();
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
+    const { user } = auth;
 
     // 验证同步类型
     const validSyncTypes: XSyncType[] = ['profile', 'followers', 'following', 'tweets', 'stats'];
@@ -59,7 +45,7 @@ export async function POST(
     const syncId = await syncXAccount(id, {
       sync_types: syncData.sync_types,
       force_sync: syncData.force_sync || false,
-      user_id: userId
+      user_id: user.userId
     });
 
     return NextResponse.json({
@@ -98,30 +84,16 @@ export async function GET(
       }, { status: 400 });
     }
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
+    const { user } = auth;
 
     // 获取同步状态
-    const syncStatus = await getSyncStatus(syncId, id, userId);
+    const syncStatus = await getSyncStatus(syncId, id, user.userId);
 
     if (!syncStatus) {
       return NextResponse.json({

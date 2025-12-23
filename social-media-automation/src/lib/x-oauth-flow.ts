@@ -323,6 +323,11 @@ export const DEFAULT_X_OAUTH_CONFIG: XOAuthConfig = {
  * 创建OAuth流程管理器实例
  */
 export function createXOAuthFlowManager(config?: Partial<XOAuthConfig>): XOAuthFlowManager {
-  const finalConfig = { ...DEFAULT_X_OAUTH_CONFIG, ...config };
+  const finalConfig: XOAuthConfig = {
+    clientId: config?.clientId || DEFAULT_X_OAUTH_CONFIG.clientId,
+    clientSecret: config?.clientSecret || DEFAULT_X_OAUTH_CONFIG.clientSecret,
+    redirectUri: config?.redirectUri || DEFAULT_X_OAUTH_CONFIG.redirectUri,
+    scopes: config?.scopes || DEFAULT_X_OAUTH_CONFIG.scopes
+  };
   return new XOAuthFlowManager(finalConfig);
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
 import { RefreshTokenRequest, RefreshTokenResponse } from '@/types/x-account';
-import { updateXAccountTokens } from '@/lib/database-x-accounts';
+import { updateXAccountTokens, getXAccountById } from '@/lib/database-x-accounts';
+import { requireAuth } from '@/lib/auth-helpers';
 
 /**
  * 刷新X平台access token
@@ -92,18 +93,16 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 获取当前用户ID进行权限验证
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    // 这里需要实现从数据库获取X账号的逻辑
-    // 暂时模拟一个xAccount对象
-    const xAccount: any = null; // 需要实现实际的数据库查询
+    const { user } = auth;
+
+    // 从数据库获取X账号
+    const xAccount = await getXAccountById(accountId, user.userId);
 
     if (!xAccount) {
       return NextResponse.json({
@@ -145,9 +144,9 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Account token refresh error:', error);
     
-    const { accountId } = await request.json();
-    if (accountId) {
-      try {
+    try {
+      const { accountId } = await request.json();
+      if (accountId) {
         await updateXAccountTokens(accountId, {
           access_token: '', // 清空token
           refresh_token: '', // 清空refresh token
@@ -155,9 +154,9 @@ export async function PUT(request: NextRequest) {
           last_error: 'Token refresh failed: ' + (error instanceof Error ? error.message : 'Unknown error'),
           updated_at: new Date()
         });
-      } catch (dbError) {
-        console.error('Failed to update account status:', dbError);
       }
+    } catch (dbError) {
+      console.error('Failed to update account status:', dbError);
     }
 
     return NextResponse.json({

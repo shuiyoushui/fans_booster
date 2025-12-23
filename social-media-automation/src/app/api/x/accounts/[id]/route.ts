@@ -12,7 +12,7 @@ import {
   DEFAULT_AUTO_GROW_SETTINGS,
   XAutoGrowSettings
 } from '@/types/x-account';
-import jwt from 'jsonwebtoken';
+import { requireAuth } from '@/lib/auth-helpers';
 
 /**
  * 获取X账号详细信息
@@ -25,32 +25,20 @@ export async function GET(
   const { id } = await params;
 
   try {
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
       const response: XAccountDetailResponse = {
         success: false,
-        error: 'User not authenticated'
+        error: auth.error.error || 'Authentication failed'
       };
-      return NextResponse.json(response, { status: 401 });
+      return NextResponse.json(response, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      const response: XAccountDetailResponse = {
-        success: false,
-        error: 'Invalid authentication token'
-      };
-      return NextResponse.json(response, { status: 401 });
-    }
+    const { user } = auth;
 
     // 获取X账号详情
-    const account = await getXAccountById(id, userId);
+    const account = await getXAccountById(id, user.userId);
     if (!account) {
       const response: XAccountDetailResponse = {
         success: false,
@@ -130,30 +118,16 @@ export async function PUT(
     const { id } = await params;
     const updateData: UpdateXAccountRequest = await request.json();
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
+    const { user } = auth;
 
     // 检查账号是否存在且属于当前用户
-    const existingAccount = await getXAccountById(id, userId);
+    const existingAccount = await getXAccountById(id, user.userId);
     if (!existingAccount) {
       return NextResponse.json({
         success: false,
@@ -165,7 +139,7 @@ export async function PUT(
     if (updateData.is_primary) {
       await updateXAccountsByCondition(
         { is_primary: false },
-        { user_id: userId, is_primary: true }
+        { user_id: user.userId, is_primary: true }
       );
     }
 
@@ -241,30 +215,16 @@ export async function DELETE(
       }, { status: 400 });
     }
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
+    const { user } = auth;
 
     // 获取账号信息进行确认
-    const account = await getXAccountById(id, userId);
+    const account = await getXAccountById(id, user.userId);
     if (!account) {
       return NextResponse.json({
         success: false,
@@ -281,7 +241,7 @@ export async function DELETE(
     }
 
     // 删除账号
-    await deleteXAccount(id, userId);
+    await deleteXAccount(id, user.userId);
 
     return NextResponse.json({
       success: true,

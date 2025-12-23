@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
 import { ValidateTokenRequest, ValidateTokenResponse } from '@/types/x-account';
+import { requireAuth } from '@/lib/auth-helpers';
+import { getXAccountById } from '@/lib/database-x-accounts';
 
 /**
  * 验证X平台access token
@@ -80,20 +82,16 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    // 这里需要验证JWT token并获取用户ID，暂时省略
-    
+    const { user } = auth;
+
     // 从数据库获取X账号信息
-    const xAccount = await getXAccountById(accountId);
+    const xAccount = await getXAccountById(accountId, user.userId);
     if (!xAccount) {
       return NextResponse.json({
         success: false,
@@ -145,15 +143,4 @@ export async function GET(request: NextRequest) {
       error: 'Account validation failed'
     }, { status: 500 });
   }
-}
-
-// 辅助函数 - 需要从database模块导入
-async function getXAccountById(accountId: string): Promise<any> {
-  // 这里需要实现从数据库获取X账号的逻辑
-  // 暂时返回模拟数据，实际实现时需要从数据库查询
-  return {
-    id: accountId,
-    token_expires_at: new Date(Date.now() + 3600000), // 1小时后过期
-    access_token: 'mock-token'
-  };
 }

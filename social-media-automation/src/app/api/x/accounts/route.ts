@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getXAccountsByUserId, getXAccountStats, updateXAccountsByCondition } from '@/lib/database-x-accounts';
 import { XAccountListResponse, XAccountStats } from '@/types/x-account';
-import jwt from 'jsonwebtoken';
+import { requireAuth } from '@/lib/auth-helpers';
 
 /**
  * 获取用户的X账号列表
@@ -9,6 +9,14 @@ import jwt from 'jsonwebtoken';
  */
 export async function GET(request: NextRequest) {
   try {
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
+    }
+
+    const { user } = auth;
+
     // 获取查询参数
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -23,30 +31,8 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
-
     // 获取X账号列表
-    const { accounts, total } = await getXAccountsByUserId(userId, {
+    const { accounts, total } = await getXAccountsByUserId(user.userId, {
       page,
       limit,
       status
@@ -93,30 +79,16 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
+    const { user } = auth;
 
     // 获取统计数据
-    const stats = await getXAccountStats(userId);
+    const stats = await getXAccountStats(user.userId);
 
     const response: XAccountStats = {
       total_accounts: stats.total_accounts,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
 import { GenerateAuthUrlRequest, GenerateAuthUrlResponse } from '@/types/x-account';
+import { requireAuth } from '@/lib/auth-helpers';
 
 /**
  * 生成X平台OAuth授权URL
@@ -8,6 +9,14 @@ import { GenerateAuthUrlRequest, GenerateAuthUrlResponse } from '@/types/x-accou
  */
 export async function GET(request: NextRequest) {
   try {
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
+      return NextResponse.json(auth.error, { status: auth.status });
+    }
+
+    const { user } = auth;
+
     // 获取查询参数
     const { searchParams } = new URL(request.url);
     const redirectUri = searchParams.get('redirect_uri');
@@ -20,24 +29,21 @@ export async function GET(request: NextRequest) {
       scopes = scopesParam.split(',').map(s => s.trim()).filter(Boolean);
     }
 
-    // 获取当前用户ID（从JWT token中获取）
-    const userId = request.headers.get('x-user-id');
-    if (!userId) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated',
-        code: 'UNAUTHORIZED'
-      }, { status: 401 });
-    }
-
     // 创建OAuth管理器
     const oauthManager = createXOAuthFlowManager({
       redirectUri: redirectUri || undefined,
       scopes: scopes.length > 0 ? scopes : undefined
     });
 
+    // 确保scopes不为空
+    if (scopes.length > 0) {
+      // 如果有自定义scopes，使用它们
+    } else {
+      // 使用默认scopes
+    }
+
     // 生成授权URL
-    const { url, state } = await oauthManager.generateAuthUrl(userId);
+    const { url, state } = await oauthManager.generateAuthUrl(user.userId);
 
     const response: GenerateAuthUrlResponse = {
       success: true,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { users, wallets } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
@@ -75,17 +76,30 @@ export async function POST(request: NextRequest) {
 
     wallets.push(wallet);
 
+    // 生成JWT令牌
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+    const token = jwt.sign(
+      { 
+        userId: newUser.id,
+        email: newUser.email 
+      },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     // 返回用户信息（不包含密码）
     const { passwordHash: _, ...userResponse } = newUser;
     
     return NextResponse.json({
       user: userResponse,
+      token,
       wallet: {
         id: wallet.id,
         balance: wallet.balance,
         currency: wallet.currency,
         address: wallet.address,
       },
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7天后过期
       message: '注册成功'
     }, { status: 201 });
 

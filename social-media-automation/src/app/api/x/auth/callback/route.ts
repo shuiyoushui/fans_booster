@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
 import { getXAccountByXUserId, createXAccount, updateUserXAccountRelation } from '@/lib/database-x-accounts';
 import { HandleOAuthCallbackRequest, BindXAccountResponse, DEFAULT_AUTO_GROW_SETTINGS } from '@/types/x-account';
-import jwt from 'jsonwebtoken';
+import { requireAuth } from '@/lib/auth-helpers';
 
 /**
  * 处理X平台OAuth回调
@@ -21,29 +21,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status: 400 });
     }
 
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // 验证用户身份
+    const auth = requireAuth(request);
+    if ('error' in auth) {
       const response: BindXAccountResponse = {
         success: false,
-        error: 'User not authenticated'
+        error: auth.error.error || 'Authentication failed'
       };
-      return NextResponse.json(response, { status: 401 });
+      return NextResponse.json(response, { status: auth.status });
     }
 
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      const response: BindXAccountResponse = {
-        success: false,
-        error: 'Invalid authentication token'
-      };
-      return NextResponse.json(response, { status: 401 });
-    }
+    const { user } = auth;
 
     // 创建OAuth管理器
     const oauthManager = createXOAuthFlowManager();
@@ -56,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // 检查该X账号是否已经被其他用户绑定
     const existingAccount = await getXAccountByXUserId(userInfo.id);
-    if (existingAccount && existingAccount.user_id !== userId) {
+    if (existingAccount && existingAccount.user_id !== user.userId) {
       const response: BindXAccountResponse = {
         success: false,
         error: 'This X account is already bound to another user'
@@ -65,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 如果账号已存在，更新tokens和信息
-    if (existingAccount && existingAccount.user_id === userId) {
+    if (existingAccount && existingAccount.user_id === user.userId) {
       // 更新access token和refresh token
       const tokenExpiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
       
@@ -120,7 +108,7 @@ export async function POST(request: NextRequest) {
     const tokenExpiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
     
     const xAccountData = {
-      user_id: userId,
+      user_id: user.userId,
       x_user_id: userInfo.id,
       username: userInfo.username,
       display_name: userInfo.name,
