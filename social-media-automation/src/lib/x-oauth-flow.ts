@@ -1,6 +1,8 @@
 // X平台OAuth 2.0授权流程机制
 // 基于Twitter API v2的Authorization Code Flow with PKCE
 
+import { saveOAuthState, getOAuthState, deleteOAuthState, cleanupExpiredStates } from './database-oauth-states';
+
 export interface XOAuthConfig {
   clientId: string;
   clientSecret: string;
@@ -51,7 +53,7 @@ export interface XUserInfo {
  */
 export class XOAuthFlowManager {
   private config: XOAuthConfig;
-  private stateStorage = new Map<string, XOAuthState>();
+  private stateStorage = new Map<string, XOAuthState>(); // 临时内存存储，用于调试
 
   constructor(config: XOAuthConfig) {
     this.config = config;
@@ -65,14 +67,30 @@ export class XOAuthFlowManager {
     const codeVerifier = this.generateCodeVerifier();
     const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
-    // 保存状态信息
-    this.stateStorage.set(state, {
+    const stateData: XOAuthState = {
       state,
       codeVerifier,
       codeChallenge,
       userId,
       timestamp: Date.now()
-    });
+    };
+
+    try {
+      // 保存到数据库（持久化存储）
+      saveOAuthState(stateData);
+      
+      // 同时保存到内存（用于快速访问和调试）
+      this.stateStorage.set(state, stateData);
+      
+      console.log('OAuth state generated and saved:', {
+        state: state.substring(0, 8) + '...',
+        userId,
+        timestamp: stateData.timestamp
+      });
+    } catch (error) {
+      console.error('Failed to save OAuth state:', error);
+      throw new Error('Failed to generate OAuth state');
+    }
 
     const params = new URLSearchParams({
       response_type: 'code',
@@ -93,27 +111,56 @@ export class XOAuthFlowManager {
    * 处理授权回调，交换access token
    */
   async handleCallback(code: string, state: string, storedState?: XOAuthState): Promise<XOAuthTokens> {
-    // 验证state
-    const stateData = storedState || this.stateStorage.get(state);
+    // 首先尝试从参数获取状态，然后从数据库查找
+    let stateData: XOAuthState | undefined = storedState;
+    
     if (!stateData) {
-      throw new Error('Invalid or expired state');
+      // 从内存查找
+      stateData = this.stateStorage.get(state);
+      
+      // 如果内存中没有，从数据库查找
+      if (!stateData) {
+        stateData = getOAuthState(state) || undefined;
+        console.log('OAuth state retrieved from database:', !!stateData);
+      } else {
+        console.log('OAuth state retrieved from memory');
+      }
+    }
+    
+    if (!stateData) {
+      console.error('OAuth state not found:', state);
+      throw new Error('Invalid or expired state: state not found');
     }
 
     // 检查时间戳（state有效期15分钟）
-    if (Date.now() - stateData.timestamp > 15 * 60 * 1000) {
+    const age = Date.now() - stateData.timestamp;
+    if (age > 15 * 60 * 1000) {
+      console.error('OAuth state expired:', { state, age });
+      // 清理过期状态
+      deleteOAuthState(state);
       this.stateStorage.delete(state);
-      throw new Error('State expired');
+      throw new Error(`Invalid or expired state: state expired (${Math.round(age / 1000)}s ago)`);
     }
+
+    console.log('OAuth state validated:', {
+      state: state.substring(0, 8) + '...',
+      age: Math.round(age / 1000) + 's',
+      userId: stateData.userId
+    });
 
     try {
       // 交换access token
       const tokens = await this.exchangeCodeForToken(code, stateData.codeVerifier);
       
       // 清理状态
+      deleteOAuthState(state);
       this.stateStorage.delete(state);
       
       return tokens;
     } catch (error) {
+      console.error('Token exchange failed:', error);
+      // 清理状态
+      deleteOAuthState(state);
       this.stateStorage.delete(state);
       throw error;
     }
@@ -293,12 +340,16 @@ export class XOAuthFlowManager {
    * 清理过期的state
    */
   cleanupExpiredStates(): void {
+    // 清理内存中的过期状态
     const now = Date.now();
     for (const [state, stateData] of this.stateStorage.entries()) {
       if (now - stateData.timestamp > 15 * 60 * 1000) {
         this.stateStorage.delete(state);
       }
     }
+    
+    // 清理数据库中的过期状态
+    cleanupExpiredStates();
   }
 }
 
