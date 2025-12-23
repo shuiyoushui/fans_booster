@@ -154,10 +154,32 @@ async def configure_twint(username: str, limit: int = 100) -> twint.Config:
     c.Username = username
     c.Limit = limit
     c.Store_object = True
-    c.Store_object_tweets_list = []
     c.Hide_output = True
     c.Pandas = True
     c.Pandas_clean = True
+    
+    # 优化配置
+    c.Resume = None
+    c.Store_tweets = False
+    c.Store_json = False
+    c.Store_csv = False
+    c.Store_pandas = True
+    c.Pandas_keeppoll = False
+    
+    # 网络配置
+    c.Proxy_host = None
+    c.Proxy_port = None
+    c.Proxy_type = None
+    
+    # 高级配置
+    c.Debug = False
+    c.Location = False
+    c.Near = None
+    c.Within = None
+    c.Lang = None
+    c.Year = None
+    c.Since = None
+    c.Until = None
     
     return c
 
@@ -165,46 +187,74 @@ async def configure_twint(username: str, limit: int = 100) -> twint.Config:
 async def get_user_info(username: str) -> Dict[str, Any]:
     """获取用户基本信息"""
     try:
-        c = await configure_twint(username, 1)
-        c.User_full = True
+        print(f"开始获取用户信息: {username}")
         
-        # 使用run方法避免同步问题
-        twint.run.Lookup(c)
+        # 创建用户配置
+        c = twint.Config()
+        c.Username = username
+        c.User_full = True
+        c.Hide_output = True
+        c.Pandas = True
+        c.Pandas_clean = True
+        c.Store_object = True
+        
+        # 重置之前的搜索结果
+        twint.run.panda.pandas_clean()
+        
+        # 获取用户信息
+        await asyncio.get_event_loop().run_in_executor(None, lambda: twint.run.Lookup(c))
         
         # 获取用户信息
         if hasattr(twint, 'run') and hasattr(twint.run, 'pandas'):
             user_df = twint.run.pandas.User_df
             if not user_df.empty:
                 user_data = user_df.iloc[0].to_dict()
+                print(f"成功获取用户信息: {user_data.get('username')}")
                 return {
                     'success': True,
                     'data': user_data
                 }
+            else:
+                print("用户数据为空")
+                return {'success': False, 'message': '用户数据为空'}
         
         return {'success': False, 'message': '无法获取用户信息'}
         
     except Exception as e:
+        print(f"获取用户信息异常: {str(e)}")
         return {'success': False, 'message': f'获取用户信息失败: {str(e)}'}
 
 # 获取推文数据
 async def get_tweets(username: str, limit: int = 100) -> List[Dict[str, Any]]:
     """获取用户推文数据"""
     try:
+        print(f"开始获取推文数据: {username}, 限制: {limit}")
+        
+        # 创建推文配置
         c = await configure_twint(username, limit)
         
-        # 运行Twint
-        twint.run.Search(c)
+        # 重置之前的搜索结果
+        twint.run.panda.pandas_clean()
+        
+        # 获取推文数据
+        await asyncio.get_event_loop().run_in_executor(None, lambda: twint.run.Search(c))
         
         # 获取推文数据
         if hasattr(twint, 'run') and hasattr(twint.run, 'pandas'):
             tweets_df = twint.run.pandas.Tweets_df
             if not tweets_df.empty:
-                return tweets_df.to_dict('records')
+                tweets_data = tweets_df.to_dict('records')
+                print(f"成功获取 {len(tweets_data)} 条推文")
+                return tweets_data
+            else:
+                print("推文数据为空")
+                return []
         
+        print("无法获取推文数据")
         return []
         
     except Exception as e:
-        print(f"获取推文失败: {str(e)}")
+        print(f"获取推文异常: {str(e)}")
         return []
 
 # 保存数据到数据库
