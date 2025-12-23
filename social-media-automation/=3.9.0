@@ -1,23 +1,11 @@
 Looking in indexes: https://mirrors.aliyun.com/pypi/simple/
-Collecting aiohttp
-  Downloading https://mirrors.aliyun.com/pypi/packages/b9/48/adf56e05f81eac31edcfae45c90928f4ad50ef2e3ea72cb8376162a368f8/aiohttp-3.13.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 16.0 MB/s  0:00:00
-Collecting aiohappyeyeballs>=2.5.0 (from aiohttp)
-  Downloading https://mirrors.aliyun.com/pypi/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
-Collecting aiosignal>=1.4.0 (from aiohttp)
-  Using cached https://mirrors.aliyun.com/pypi/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
-Collecting attrs>=17.3.0 (from aiohttp)
-  Using cached https://mirrors.aliyun.com/pypi/packages/3a/2a/7cc015f5b9f5db42b7d48157e23356022889fc354a2813c15934b7cb5c0e/attrs-25.4.0-py3-none-any.whl (67 kB)
-Collecting frozenlist>=1.1.1 (from aiohttp)
-  Using cached https://mirrors.aliyun.com/pypi/packages/6a/bd/d91c5e39f490a49df14320f4e8c80161cfcce09f1e2cde1edd16a551abb3/frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
-Collecting multidict<7.0,>=4.5 (from aiohttp)
-  Downloading https://mirrors.aliyun.com/pypi/packages/0d/e2/9baffdae21a76f77ef8447f1a05a96ec4bc0a24dae08767abc0a2fe680b8/multidict-6.7.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (256 kB)
-Collecting propcache>=0.2.0 (from aiohttp)
-  Downloading https://mirrors.aliyun.com/pypi/packages/46/4b/3aae6835b8e5f44ea6a68348ad90f78134047b503765087be2f9912140ea/propcache-0.4.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (221 kB)
-Collecting yarl<2.0,>=1.17.0 (from aiohttp)
-  Downloading https://mirrors.aliyun.com/pypi/packages/db/0f/0d52c98b8a885aeda831224b78f3be7ec2e1aa4a62091f9f9188c3c65b56/yarl-1.22.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (377 kB)
+Requirement already satisfied: aiohttp in ./venv/lib/python3.12/site-packages (3.13.2)
+Requirement already satisfied: aiohappyeyeballs>=2.5.0 in ./venv/lib/python3.12/site-packages (from aiohttp) (2.6.1)
+Requirement already satisfied: aiosignal>=1.4.0 in ./venv/lib/python3.12/site-packages (from aiohttp) (1.4.0)
+Requirement already satisfied: attrs>=17.3.0 in ./venv/lib/python3.12/site-packages (from aiohttp) (25.4.0)
+Requirement already satisfied: frozenlist>=1.1.1 in ./venv/lib/python3.12/site-packages (from aiohttp) (1.8.0)
+Requirement already satisfied: multidict<7.0,>=4.5 in ./venv/lib/python3.12/site-packages (from aiohttp) (6.7.0)
+Requirement already satisfied: propcache>=0.2.0 in ./venv/lib/python3.12/site-packages (from aiohttp) (0.4.1)
+Requirement already satisfied: yarl<2.0,>=1.17.0 in ./venv/lib/python3.12/site-packages (from aiohttp) (1.22.0)
 Requirement already satisfied: idna>=2.0 in ./venv/lib/python3.12/site-packages (from yarl<2.0,>=1.17.0->aiohttp) (3.11)
 Requirement already satisfied: typing-extensions>=4.2 in ./venv/lib/python3.12/site-packages (from aiosignal>=1.4.0->aiohttp) (4.15.0)
-Installing collected packages: propcache, multidict, frozenlist, attrs, aiohappyeyeballs, yarl, aiosignal, aiohttp
-
-Successfully installed aiohappyeyeballs-2.6.1 aiohttp-3.13.2 aiosignal-1.4.0 attrs-25.4.0 frozenlist-1.8.0 multidict-6.7.0 propcache-0.4.1 yarl-1.22.0
