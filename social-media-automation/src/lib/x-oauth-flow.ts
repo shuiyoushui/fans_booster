@@ -315,6 +315,14 @@ export const DEFAULT_X_OAUTH_CONFIG: XOAuthConfig = {
   ]
 };
 
+// 调试环境变量
+console.log('X OAuth Config:', {
+  clientId: process.env.X_CLIENT_ID?.substring(0, 10) + '...',
+  clientSecret: process.env.X_CLIENT_SECRET?.substring(0, 10) + '...',
+  redirectUri: process.env.X_REDIRECT_URI,
+  appUrl: process.env.NEXT_PUBLIC_APP_URL
+});
+
 /**
  * 创建OAuth流程管理器实例
  */
