@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GrowthTarget, SocialAccount, Wallet, AutoOrder } from '@/types';
 import { BindAccountModal, CreateTargetModal, RechargeModal, CommentTemplatesModal } from '@/components/Modals';
-import { XAccountList } from '@/components/XAccountList';
+import TwitterAccountManager from '@/components/TwitterAccountManager';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -326,13 +326,14 @@ export default function Dashboard() {
 
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* X账号绑定管理 */}
+            {/* Twitter账号管理 */}
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">X (Twitter) 账号管理</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Twitter 账号管理</h2>
+                <span className="text-sm text-gray-500">基于Twint数据采集</span>
               </div>
               <div className="p-6">
-                <XAccountList />
+                <TwitterAccountManager />
               </div>
             </div>
 
