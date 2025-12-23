@@ -42,8 +42,15 @@ start_services() {
     echo "启动Python Twitter数据采集服务..."
     cd twitter_service
     
-    # 使用简化的服务启动
-    nohup python3 simple_main.py > python_service.log 2>&1 &
+    # 检查虚拟环境是否存在
+    if [ ! -d "../venv" ]; then
+        echo "虚拟环境不存在，请先运行构建脚本"
+        exit 1
+    fi
+    
+    # 激活虚拟环境并启动服务
+    source ../venv/bin/activate
+    nohup python simple_main.py > python_service.log 2>&1 &
     PYTHON_PID=$!
     echo "Python服务启动，PID: $PYTHON_PID"
     
