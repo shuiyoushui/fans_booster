@@ -75,6 +75,8 @@ export class XOAuthFlowManager {
       timestamp: Date.now()
     };
 
+    console.log('Generating OAuth URL with state:', state.substring(0, 8) + '...');
+
     try {
       // 保存到状态管理器
       saveOAuthState(stateData);
@@ -85,7 +87,17 @@ export class XOAuthFlowManager {
         throw new Error('State verification failed immediately after save');
       }
       
-      console.log('OAuth state generated and saved successfully');
+      // 验证保存的数据完整性
+      if (!verification.codeVerifier || !verification.codeChallenge) {
+        throw new Error('Saved state data is incomplete');
+      }
+      
+      console.log('OAuth state generated and verified successfully:', {
+        state: state.substring(0, 8) + '...',
+        userId: userId,
+        hasCodeVerifier: !!verification.codeVerifier,
+        hasCodeChallenge: !!verification.codeChallenge
+      });
       
     } catch (error) {
       console.error('Failed to save OAuth state:', error);
@@ -104,6 +116,13 @@ export class XOAuthFlowManager {
 
     const authUrl = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
 
+    console.log('Authorization URL generated:', {
+      state: state.substring(0, 8) + '...',
+      userId: userId,
+      urlLength: authUrl.length,
+      redirectUri: this.config.redirectUri
+    });
+
     return { url: authUrl, state };
   }
 
@@ -111,17 +130,44 @@ export class XOAuthFlowManager {
    * 处理授权回调，交换access token
    */
   async handleCallback(code: string, state: string): Promise<XOAuthTokens> {
-    console.log('Starting OAuth callback with state:', state.substring(0, 8) + '...');
-    
+    console.log('Starting OAuth callback processing:', {
+      hasCode: !!code,
+      state: state?.substring(0, 8) + '...'
+    });
+
+    // 输入验证
+    if (!code || !state) {
+      throw new Error(`Invalid callback parameters: ${!code ? 'missing code' : ''}${!state ? 'missing state' : ''}`);
+    }
+
     // 从状态管理器查找
     const stateData = getOAuthState(state);
     
     if (!stateData) {
       // 调试：获取状态统计
       const stats = getOAuthStateStats();
-      console.error('OAuth state not found:', state);
-      console.log('Current states:', stats);
-      throw new Error(`Invalid or expired state: state not found in storage. Available states: ${stats.total}`);
+      console.error('OAuth state not found:', {
+        state: state.substring(0, 8) + '...',
+        availableStates: stats.total,
+        currentTime: new Date().toISOString()
+      });
+      
+      // 提供更详细的错误信息
+      const availableStates = stats.states.map(s => s.state).join(', ');
+      throw new Error(`Invalid or expired state: state not found in storage. Available states: ${availableStates} (Total: ${stats.total})`);
+    }
+
+    // 验证状态数据完整性
+    if (!stateData.codeVerifier || !stateData.codeChallenge) {
+      console.error('OAuth state data corrupted:', {
+        state: state.substring(0, 8) + '...',
+        hasCodeVerifier: !!stateData.codeVerifier,
+        hasCodeChallenge: !!stateData.codeChallenge
+      });
+      
+      // 清理损坏的状态
+      deleteOAuthState(state);
+      throw new Error('Invalid state: corrupted state data (missing codeVerifier or codeChallenge)');
     }
 
     // 检查时间戳（state有效期15分钟）
@@ -130,26 +176,35 @@ export class XOAuthFlowManager {
       console.error('OAuth state expired:', { 
         state: state.substring(0, 8) + '...', 
         age: Math.round(age / 1000) + 's',
-        userId: stateData.userId
+        userId: stateData.userId,
+        expiredAt: new Date(stateData.timestamp + 15 * 60 * 1000).toISOString()
       });
       
       // 清理过期状态
       deleteOAuthState(state);
-      throw new Error(`Invalid or expired state: state expired (${Math.round(age / 1000)}s ago)`);
+      throw new Error(`Invalid or expired state: state expired (${Math.round(age / 1000)}s ago, max allowed: 900s)`);
     }
 
     console.log('OAuth state validated successfully:', {
       state: state.substring(0, 8) + '...',
       age: Math.round(age / 1000) + 's',
       userId: stateData.userId,
-      hasCodeVerifier: !!stateData.codeVerifier
+      hasCodeVerifier: !!stateData.codeVerifier,
+      hasCodeChallenge: !!stateData.codeChallenge
     });
 
     try {
       // 交换access token
       const tokens = await this.exchangeCodeForToken(code, stateData.codeVerifier);
       
-      console.log('Token exchange successful, cleaning up state...');
+      console.log('Token exchange successful:', {
+        hasAccessToken: !!tokens.accessToken,
+        tokenType: tokens.tokenType,
+        expiresIn: tokens.expiresIn,
+        hasRefreshToken: !!tokens.refreshToken
+      });
+      
+      console.log('Cleaning up OAuth state after successful exchange...');
       
       // 清理状态
       deleteOAuthState(state);
@@ -157,8 +212,15 @@ export class XOAuthFlowManager {
       return tokens;
     } catch (error) {
       console.error('Token exchange failed:', error);
-      // 清理状态
-      deleteOAuthState(state);
+      
+      // 不要立即清理状态，给用户重试机会
+      // 但记录错误以便后续调试
+      console.error('State preserved for potential retry:', {
+        state: state.substring(0, 8) + '...',
+        age: Math.round(age / 1000) + 's',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
       throw error;
     }
   }
@@ -267,10 +329,30 @@ export class XOAuthFlowManager {
    * 生成随机state字符串
    */
   private generateState(userId?: string): string {
-    const random = crypto.getRandomValues(new Uint8Array(32));
+    // 使用更安全的随机值生成方法
+    const random = crypto.getRandomValues(new Uint8Array(24));
     const base64 = btoa(String.fromCharCode.apply(null, Array.from(random)));
-    const cleanState = base64.replace(/[+/=]/g, '').substring(0, 32);
-    return userId ? `${userId}_${cleanState}` : cleanState;
+    
+    // 清理base64字符串，移除特殊字符，只保留字母和数字
+    const cleanState = base64
+      .replace(/[+/=]/g, '') // 移除 + / = 字符
+      .replace(/[^a-zA-Z0-9]/g, '') // 移除任何其他非字母数字字符
+      .substring(0, 32); // 确保长度为32字符
+    
+    // 如果有userId，将其哈希后添加到state中，避免直接包含用户ID
+    if (userId) {
+      const userHash = crypto.subtle.digest('SHA-256', new TextEncoder().encode(userId))
+        .then(hash => {
+          const hashArray = Array.from(new Uint8Array(hash));
+          return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        });
+      
+      // 同步获取简化的用户标识
+      const userPrefix = userId.substring(0, 8).replace(/[^a-zA-Z0-9]/g, '');
+      return `${userPrefix}_${cleanState}`;
+    }
+    
+    return cleanState;
   }
 
   /**
