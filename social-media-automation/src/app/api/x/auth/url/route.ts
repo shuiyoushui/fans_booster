@@ -45,6 +45,13 @@ export async function GET(request: NextRequest) {
     // 生成授权URL
     const { url, state } = await oauthManager.generateAuthUrl(user.userId);
 
+    // 调试日志
+    console.log('Generated OAuth URL:', {
+      url: url.replace(/code_challenge=[^&]+/, 'code_challenge=...'),
+      clientId: process.env.X_CLIENT_ID?.substring(0, 15) + '...',
+      redirectUri: process.env.X_REDIRECT_URI
+    });
+
     const response: GenerateAuthUrlResponse = {
       success: true,
       auth_url: url,
