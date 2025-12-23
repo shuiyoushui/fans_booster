@@ -152,9 +152,29 @@ export class XOAuthFlowManager {
         currentTime: new Date().toISOString()
       });
       
-      // 提供更详细的错误信息
-      const availableStates = stats.states.map(s => s.state).join(', ');
-      throw new Error(`Invalid or expired state: state not found in storage. Available states: ${availableStates} (Total: ${stats.total})`);
+      // 分析state格式，提供更详细的错误信息
+      const stateParts = state.split('_');
+      let enhancedError = `Invalid or expired state: state not found in storage. Available states: ${stats.total}`;
+      
+      if (stateParts.length === 2) {
+        const timestamp = parseInt(stateParts[0]);
+        if (!isNaN(timestamp)) {
+          const stateTime = new Date(timestamp);
+          const now = new Date();
+          const ageHours = (now.getTime() - timestamp) / (1000 * 60 * 60);
+          
+          if (ageHours > 0) { // 如果是过去的时间戳
+            enhancedError = `Expired authorization URL. The authorization link was generated ${Math.round(ageHours)} hours ago (at ${stateTime.toISOString()}) and has expired. Please request a new authorization URL and try again.`;
+          } else {
+            enhancedError = `Invalid authorization URL. The timestamp ${timestamp} appears to be from the future. Please generate a new authorization URL.`;
+          }
+        }
+      }
+      
+      // 提供所有可用状态的预览用于调试
+      const availableStatePreviews = stats.states.map(s => s.state).join(', ');
+      
+      throw new Error(`${enhancedError} Available states: [${availableStatePreviews}]`);
     }
 
     // 验证状态数据完整性

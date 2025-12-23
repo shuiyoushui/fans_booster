@@ -3,6 +3,7 @@ import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
 import { createXAPIClient } from '@/lib/x-api-client';
 import { requireAuth } from '@/lib/auth-helpers';
 import { createXAccount } from '@/lib/database-x-accounts';
+import { getOAuthState, getOAuthStateStats } from '@/lib/simple-oauth-state';
 
 /**
  * 处理X平台OAuth回调
