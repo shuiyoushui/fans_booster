@@ -1,19 +1,20 @@
+#!/bin/bash
+
 set -Eeuo pipefail
 
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROJECT_DIR="$WORK_DIR/social-media-automation"
 
-echo "Building social media automation application..."
+echo "Working directory: $WORK_DIR"
+cd "$WORK_DIR/social-media-automation"
 
-# 进入项目目录
-cd "$PROJECT_DIR"
+echo "Starting build process..."
 
-# 安装依赖
+# Install dependencies
 echo "Installing dependencies..."
 npm install
 
-# 构建项目
-echo "Building application..."
+# Build the project
+echo "Building Next.js application..."
 npm run build
 
 echo "Build completed successfully!"

@@ -1,7 +1,8 @@
+#!/bin/bash
+
 set -Eeuo pipefail
 
 WORK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROJECT_DIR="$WORK_DIR/social-media-automation"
 
 kill_port_if_listening() {
     local pids
@@ -22,13 +23,14 @@ kill_port_if_listening() {
 }
 
 start_service() {
-    echo "Starting social media automation service on port ${DEPLOY_RUN_PORT}..."
+    echo "Changing to project directory..."
+    cd "$WORK_DIR/social-media-automation"
     
-    # 进入项目目录
-    cd "$PROJECT_DIR"
+    echo "Starting Next.js production server on port ${DEPLOY_RUN_PORT}..."
+    echo "Environment: NODE_ENV=production"
     
-    # 启动服务
-    npm run start -- --port ${DEPLOY_RUN_PORT}
+    # Start the production server
+    NODE_ENV=production npm run start -- --port "${DEPLOY_RUN_PORT}"
 }
 
 echo "Clearing port ${DEPLOY_RUN_PORT} before start."

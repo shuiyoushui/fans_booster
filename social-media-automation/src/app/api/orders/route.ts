@@ -30,9 +30,13 @@ export async function POST(request: NextRequest) {
     const newOrder: AutoOrder = {
       id: Date.now().toString(),
       targetId,
+      serviceType: 'followers', // 默认值
+      quantity: selectedPackage.quantity,
       packageId,
       status: 'pending',
-      orderAmount: selectedPackage.price,
+      unitPrice: selectedPackage.price / selectedPackage.quantity,
+      totalAmount: selectedPackage.price,
+      currency: 'USDT',
       createdAt: new Date(),
     };
 
@@ -154,9 +158,13 @@ export async function PUT(request: NextRequest) {
           const autoOrder: AutoOrder = {
             id: Date.now().toString() + '_' + result.id,
             targetId: result.id,
+            serviceType: result.metric as any,
+            quantity: recommendedPackage.quantity,
             packageId: recommendedPackage.id,
             status: 'pending',
-            orderAmount: recommendedPackage.price,
+            unitPrice: recommendedPackage.price / recommendedPackage.quantity,
+            totalAmount: recommendedPackage.price,
+            currency: 'USDT',
             createdAt: new Date(),
           };
 

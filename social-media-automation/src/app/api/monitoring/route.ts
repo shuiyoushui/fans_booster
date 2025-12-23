@@ -91,6 +91,7 @@ export async function PATCH(request: NextRequest) {
         const result: MonitoringResult = {
           id: Date.now().toString() + '_' + target.id,
           accountId: target.accountId,
+          targetId: target.id,
           metric: target.metric,
           value: currentValue,
           recordedAt: new Date(),

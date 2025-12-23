@@ -92,6 +92,14 @@ export async function POST(request: NextRequest) {
       accessToken,
       refreshToken,
       isActive: true,
+      lastSync: new Date(),
+      currentMetrics: {
+        followers: 0,
+        likes: 0,
+        views: 0,
+        comments: 0,
+        shares: 0
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
     };

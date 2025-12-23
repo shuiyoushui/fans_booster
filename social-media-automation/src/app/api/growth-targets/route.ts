@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GrowthTarget } from '@/types';
-
-// 模拟数据库存储
-let growthTargets: GrowthTarget[] = [];
+import db from '@/lib/database';
 
 // 获取用户的增长目标
 export async function GET(request: NextRequest) {
@@ -17,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userTargets = growthTargets.filter(target => target.userId === userId);
+    const userTargets = db.getGrowthTargets().filter(target => target.userId === userId);
 
     return NextResponse.json({ 
       targets: userTargets.sort((a, b) => 
@@ -40,16 +38,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       userId, 
-      accountId, 
+      accountId, // 可选
       targetMetric, 
       targetValue, 
       deadline, 
       autoOrderEnabled = false,
-      budgetLimit 
+      budgetLimit,
+      commentTemplates = [] // 新增评论内容集
     } = body;
 
     // 验证必填字段
-    if (!userId || !accountId || !targetMetric || !targetValue || !deadline) {
+    if (!userId || !targetMetric || !targetValue || !deadline) {
       return NextResponse.json(
         { error: '所有必填字段都是必需的' },
         { status: 400 }
@@ -81,26 +80,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取当前值（这里简化处理，实际应该从账号数据中获取）
-    const currentValue = 0;
+    // 验证评论内容集（如果目标类型是评论）
+    if (targetMetric === 'comments' && commentTemplates.length === 0) {
+      return NextResponse.json(
+        { error: '评论目标需要提供评论内容集' },
+        { status: 400 }
+      );
+    }
+
+    // 获取当前值（如果有绑定的账号）
+    let currentValue = 0;
+    if (accountId) {
+      // 这里应该从账号数据中获取当前值
+      // 暂时使用模拟数据
+      currentValue = Math.floor(Math.random() * targetValue * 0.7);
+    }
 
     // 创建新的增长目标
     const newTarget: GrowthTarget = {
       id: Date.now().toString(),
       userId,
-      accountId,
-      targetMetric,
+      accountId: accountId || undefined, // 支持无账号目标
+      targetMetric: targetMetric as any,
       targetValue,
       currentValue,
       deadline: deadlineDate,
       autoOrderEnabled,
       budgetLimit,
+      commentTemplates,
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    growthTargets.push(newTarget);
+    db.addGrowthTarget(newTarget);
 
     return NextResponse.json({ 
       target: newTarget,
@@ -129,8 +142,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const targetIndex = growthTargets.findIndex(t => t.id === id);
-    if (targetIndex === -1) {
+    const target = db.getGrowthTargets().find(t => t.id === id);
+    if (!target) {
       return NextResponse.json(
         { error: '未找到增长目标' },
         { status: 404 }
@@ -138,7 +151,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 验证权限
-    if (userId && growthTargets[targetIndex].userId !== userId) {
+    if (userId && target.userId !== userId) {
       return NextResponse.json(
         { error: '没有权限修改此目标' },
         { status: 403 }
@@ -146,14 +159,19 @@ export async function PUT(request: NextRequest) {
     }
 
     // 更新目标
-    growthTargets[targetIndex] = {
-      ...growthTargets[targetIndex],
-      ...updates,
-      updatedAt: new Date(),
-    };
+    const updated = db.updateGrowthTarget(id, { ...updates, updatedAt: new Date() });
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: '更新失败' },
+        { status: 500 }
+      );
+    }
+
+    const updatedTarget = db.getGrowthTargets().find(t => t.id === id);
 
     return NextResponse.json({ 
-      target: growthTargets[targetIndex],
+      target: updatedTarget,
       message: '增长目标更新成功'
     });
 
@@ -180,8 +198,8 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const targetIndex = growthTargets.findIndex(t => t.id === id && t.userId === userId);
-    if (targetIndex === -1) {
+    const target = db.getGrowthTargets().find(t => t.id === id && t.userId === userId);
+    if (!target) {
       return NextResponse.json(
         { error: '未找到增长目标或没有权限删除' },
         { status: 404 }
@@ -189,8 +207,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 软删除：标记为已取消
-    growthTargets[targetIndex].status = 'cancelled';
-    growthTargets[targetIndex].updatedAt = new Date();
+    const updated = db.updateGrowthTarget(id, { status: 'cancelled', updatedAt: new Date() });
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: '删除失败' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ 
       message: '增长目标已取消'
