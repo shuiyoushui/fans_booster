@@ -63,7 +63,12 @@ export default function TwitterAccountManager() {
   // 获取任务列表
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/twitter/tasks');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/twitter/tasks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       if (data.success) {
         setTasks(data.tasks);
@@ -80,12 +85,19 @@ export default function TwitterAccountManager() {
       return;
     }
 
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('请先登录');
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
       const response = await fetch('/api/twitter/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           username: username.trim().replace('@', ''),
@@ -120,9 +132,15 @@ export default function TwitterAccountManager() {
 
   // 轮询任务状态
   const pollTaskStatus = async (taskId: string) => {
+    const token = localStorage.getItem('token');
+    
     const poll = async () => {
       try {
-        const response = await fetch(`/api/twitter/result/${taskId}`);
+        const response = await fetch(`/api/twitter/result/${taskId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await response.json();
 
         if (data.status === 'completed') {
@@ -159,7 +177,12 @@ export default function TwitterAccountManager() {
     setSelectedAccount(user);
     
     try {
-      const response = await fetch(`/api/twitter/user/${user.username}`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/twitter/user/${user.username}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await response.json();
       
       if (data.success && data.data) {
