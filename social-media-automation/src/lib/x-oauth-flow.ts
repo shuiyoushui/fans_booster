@@ -309,13 +309,9 @@ export const DEFAULT_X_OAUTH_CONFIG: XOAuthConfig = {
   redirectUri: process.env.X_REDIRECT_URI || `${process.env.NEXT_PUBLIC_APP_URL}/auth/x/callback`,
   scopes: [
     'users.read',           // 读取用户信息
+    'offline.access',       // 获取refresh token
     'tweet.read',           // 读取推文
     'follows.read',         // 读取关注关系
-    'follows.write',        // 管理关注关系
-    'offline.access',       // 获取refresh token
-    'tweet.write',          // 发送推文（可选）
-    'like.read',            // 读取点赞（可选）
-    'like.write',           // 点赞（可选）
   ]
 };
 
