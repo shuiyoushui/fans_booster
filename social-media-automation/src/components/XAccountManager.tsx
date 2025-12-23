@@ -194,7 +194,7 @@ export default function XAccountManager() {
     sessionStorage.removeItem('temp_auth_token');
   };
 
-  // 同步账号
+  // 同步账号 - 使用新的X API
   const syncAccount = async (accountId: string) => {
     try {
       const token = localStorage.getItem('token');
@@ -207,7 +207,7 @@ export default function XAccountManager() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          sync_types: ['profile', 'followers', 'following'],
+          sync_types: ['profile', 'metrics'], // 使用X API替代Twint
           force_sync: false
         })
       });
@@ -215,18 +215,22 @@ export default function XAccountManager() {
       const data = await response.json();
       
       if (data.success) {
-        toast.success('同步任务已创建');
+        toast.success('数据同步已开始，正在通过X API获取最新数据...');
         // 轮询同步状态
         setTimeout(() => {
           fetchAccounts();
           fetchStats();
-        }, 2000);
+        }, 3000);
       } else {
-        toast.error(data.error || '同步失败');
+        if (data.requires_reauth) {
+          toast.error('授权已过期，请重新绑定账号');
+        } else {
+          toast.error(data.error || '同步失败');
+        }
       }
     } catch (error) {
       console.error('同步账号失败:', error);
-      toast.error('同步失败');
+      toast.error('同步失败，请检查网络连接');
     }
   };
 
@@ -371,7 +375,7 @@ export default function XAccountManager() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold mb-2">绑定新账号</h2>
-            <p className="text-gray-600">通过X平台OAuth 2.0安全授权绑定您的账号</p>
+            <p className="text-gray-600">通过X平台OAuth 2.0安全授权绑定您的账号，使用官方API获取运营数据</p>
           </div>
           <button
             onClick={startXOAuth}
@@ -479,7 +483,7 @@ export default function XAccountManager() {
                     onClick={() => syncAccount(account.id)}
                     className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition-colors"
                   >
-                    同步数据
+                    同步数据(X API)
                   </button>
                   <button
                     onClick={() => deleteAccount(account.id)}

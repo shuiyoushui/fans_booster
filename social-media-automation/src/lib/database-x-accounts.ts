@@ -326,7 +326,7 @@ export async function deleteXAccount(accountId: string, userId: string): Promise
 }
 
 /**
- * 同步X账号数据
+ * 同步X账号数据 - 使用X API v2替代Twint
  */
 export async function syncXAccount(
   accountId: string, 
@@ -340,6 +340,11 @@ export async function syncXAccount(
   const account = await getXAccountById(accountId, options.user_id);
   if (!account) {
     throw new Error('Account not found or permission denied');
+  }
+
+  // 检查token是否过期
+  if (account.token_expires_at && account.token_expires_at < new Date()) {
+    throw new Error('Access token expired, requires re-authorization');
   }
 
   // 创建同步任务记录
@@ -359,20 +364,110 @@ export async function syncXAccount(
     mockSyncLogs.push(syncLog);
   }
 
-  // 模拟异步同步过程
+  // 使用X API v2进行数据同步
   setTimeout(async () => {
     try {
-      // 这里应该调用X平台API获取最新数据
-      // 暂时模拟成功
-      for (const syncType of options.sync_types) {
-        const syncLog = mockSyncLogs.find(
-          log => log.x_account_id === accountId && log.sync_type === syncType
+      const { createXAPIClient } = await import('@/lib/x-api-client');
+      const xApiClient = createXAPIClient(account.access_token!);
+
+      // 同步基本信息
+      if (options.sync_types.includes('profile')) {
+        const userInfo = await xApiClient.getUserInfo();
+        
+        await updateXAccount(accountId, {
+          display_name: userInfo.name,
+          avatar_url: userInfo.profile_image_url,
+          verified: userInfo.verified,
+          bio: userInfo.description,
+          location: userInfo.location,
+          website: userInfo.url,
+          followers_count: userInfo.public_metrics.followers_count,
+          following_count: userInfo.public_metrics.following_count,
+          tweets_count: userInfo.public_metrics.tweet_count,
+          listed_count: userInfo.public_metrics.listed_count
+        });
+
+        // 更新同步日志
+        const profileLog = mockSyncLogs.find(
+          log => log.x_account_id === accountId && log.sync_type === 'profile'
         );
-        if (syncLog) {
-          syncLog.sync_status = 'completed';
-          syncLog.completed_at = new Date();
-          syncLog.records_processed = 1;
-          syncLog.records_success = 1;
+        if (profileLog) {
+          profileLog.sync_status = 'completed';
+          profileLog.completed_at = new Date();
+          profileLog.records_processed = 1;
+          profileLog.records_success = 1;
+        }
+      }
+
+      // 同步详细指标
+      if (options.sync_types.includes('metrics')) {
+        const metrics = await xApiClient.getUserMetrics(account.x_user_id);
+        
+        // 更新额外的指标数据（可以存储在单独的表中）
+        console.log('X Account metrics synced:', metrics);
+
+        const metricsLog = mockSyncLogs.find(
+          log => log.x_account_id === accountId && log.sync_type === 'metrics'
+        );
+        if (metricsLog) {
+          metricsLog.sync_status = 'completed';
+          metricsLog.completed_at = new Date();
+          metricsLog.records_processed = 1;
+          metricsLog.records_success = 1;
+        }
+      }
+
+      // 同步关注者数据（可选，受API限制）
+      if (options.sync_types.includes('followers')) {
+        try {
+          const followers = await xApiClient.getUserFollowers(account.x_user_id, 100);
+          
+          const followersLog = mockSyncLogs.find(
+            log => log.x_account_id === accountId && log.sync_type === 'followers'
+          );
+          if (followersLog) {
+            followersLog.sync_status = 'completed';
+            followersLog.completed_at = new Date();
+            followersLog.records_processed = followers.length;
+            followersLog.records_success = followers.length;
+          }
+        } catch (followerError) {
+          console.error('Followers sync error:', followerError);
+          const followersLog = mockSyncLogs.find(
+            log => log.x_account_id === accountId && log.sync_type === 'followers'
+          );
+          if (followersLog) {
+            followersLog.sync_status = 'failed';
+            followersLog.completed_at = new Date();
+            followersLog.error_message = followerError instanceof Error ? followerError.message : 'Unknown error';
+          }
+        }
+      }
+
+      // 同步关注的人数据
+      if (options.sync_types.includes('following')) {
+        try {
+          const following = await xApiClient.getUserFollowing(account.x_user_id, 100);
+          
+          const followingLog = mockSyncLogs.find(
+            log => log.x_account_id === accountId && log.sync_type === 'following'
+          );
+          if (followingLog) {
+            followingLog.sync_status = 'completed';
+            followingLog.completed_at = new Date();
+            followingLog.records_processed = following.length;
+            followingLog.records_success = following.length;
+          }
+        } catch (followingError) {
+          console.error('Following sync error:', followingError);
+          const followingLog = mockSyncLogs.find(
+            log => log.x_account_id === accountId && log.sync_type === 'following'
+          );
+          if (followingLog) {
+            followingLog.sync_status = 'failed';
+            followingLog.completed_at = new Date();
+            followingLog.error_message = followingError instanceof Error ? followingError.message : 'Unknown error';
+          }
         }
       }
 
@@ -384,7 +479,9 @@ export async function syncXAccount(
       });
 
     } catch (error) {
-      // 同步失败
+      console.error('X API sync error:', error);
+      
+      // 同步失败，更新所有相关日志
       for (const syncType of options.sync_types) {
         const syncLog = mockSyncLogs.find(
           log => log.x_account_id === accountId && log.sync_type === syncType

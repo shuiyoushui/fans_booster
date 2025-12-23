@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
-import { getXAccountByXUserId, createXAccount, updateUserXAccountRelation } from '@/lib/database-x-accounts';
-import { HandleOAuthCallbackRequest, BindXAccountResponse, DEFAULT_AUTO_GROW_SETTINGS } from '@/types/x-account';
+import { createXAPIClient } from '@/lib/x-api-client';
 import { requireAuth } from '@/lib/auth-helpers';
+import { createXAccount } from '@/lib/database-x-accounts';
 
 /**
  * 处理X平台OAuth回调
@@ -10,182 +10,94 @@ import { requireAuth } from '@/lib/auth-helpers';
  */
 export async function POST(request: NextRequest) {
   try {
-    const body: HandleOAuthCallbackRequest = await request.json();
-    const { code, state, user_preferences = {} } = body;
-
-    // 添加调试日志
-    console.log('OAuth callback debug:', {
-      hasCode: !!code,
-      hasState: !!state,
-      codeLength: code?.length,
-      stateLength: state?.length
-    });
-
-    if (!code || !state) {
-      const response: BindXAccountResponse = {
-        success: false,
-        error: 'Missing required parameters: code and state'
-      };
-      return NextResponse.json(response, { status: 400 });
-    }
-
     // 验证用户身份
     const auth = requireAuth(request);
     if ('error' in auth) {
-      const response: BindXAccountResponse = {
-        success: false,
-        error: auth.error.error || 'Authentication failed'
-      };
-      return NextResponse.json(response, { status: auth.status });
+      return NextResponse.json(auth.error, { status: auth.status });
     }
 
     const { user } = auth;
+    const body = await request.json();
+    const { code, state } = body;
 
-    // 创建OAuth管理器
-    const oauthManager = createXOAuthFlowManager();
-
-    // 处理回调，获取tokens
-    const tokens = await oauthManager.handleCallback(code, state);
-
-    // 获取用户信息
-    const userInfo = await oauthManager.getUserInfo(tokens.accessToken);
-
-    // 检查该X账号是否已经被其他用户绑定
-    const existingAccount = await getXAccountByXUserId(userInfo.id);
-    if (existingAccount && existingAccount.user_id !== user.userId) {
-      const response: BindXAccountResponse = {
-        success: false,
-        error: 'This X account is already bound to another user'
-      };
-      return NextResponse.json(response, { status: 409 });
-    }
-
-    // 如果账号已存在，更新tokens和信息
-    if (existingAccount && existingAccount.user_id === user.userId) {
-      // 更新access token和refresh token
-      const tokenExpiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
-      
-      await updateUserXAccountRelation(existingAccount.id, {
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
-        token_expires_at: tokenExpiresAt,
-        scope: tokens.scope,
-        binding_status: 'active',
-        last_sync_at: new Date(),
-        last_error: undefined,
-        username: userInfo.username,
-        display_name: userInfo.name,
-        avatar_url: userInfo.avatar_url,
-        bio: userInfo.description,
-        location: userInfo.location,
-        verified: userInfo.verified,
-        followers_count: userInfo.public_metrics.followers_count,
-        following_count: userInfo.public_metrics.following_count,
-        tweets_count: userInfo.public_metrics.tweet_count,
-        listed_count: userInfo.public_metrics.listed_count,
-        auto_grow_enabled: user_preferences.auto_grow_enabled ?? false,
-        auto_grow_settings: user_preferences.auto_grow_settings ?? DEFAULT_AUTO_GROW_SETTINGS,
-        updated_at: new Date()
-      });
-
-      const response: BindXAccountResponse = {
-        success: true,
-        account: {
-          id: existingAccount.id,
-          username: existingAccount.username,
-          display_name: existingAccount.display_name,
-          avatar_url: existingAccount.avatar_url,
-          verified: existingAccount.verified,
-          followers_count: existingAccount.followers_count,
-          following_count: existingAccount.following_count,
-          tweets_count: existingAccount.tweets_count,
-          binding_status: 'active',
-          is_active: existingAccount.is_active,
-          is_primary: existingAccount.is_primary,
-          last_sync_at: new Date().toISOString(),
-          auto_grow_enabled: existingAccount.auto_grow_enabled,
-          created_at: existingAccount.created_at.toISOString()
+    if (!code || !state) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing authorization code or state'
         },
-        message: 'X account reconnected successfully'
-      };
-
-      return NextResponse.json(response);
+        { status: 400 }
+      );
     }
 
-    // 创建新的X账号绑定记录
-    const tokenExpiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
+    // 创建OAuth流程管理器
+    const oauthManager = createXOAuthFlowManager();
     
-    const xAccountData = {
+    // 处理OAuth回调，获取access token
+    const tokens = await oauthManager.handleCallback(code, state);
+    
+    // 创建X API客户端
+    const xApiClient = createXAPIClient(tokens.accessToken);
+    
+    // 获取用户信息
+    const userInfo = await xApiClient.getUserInfo();
+    
+    // 获取用户详细指标数据
+    const metrics = await xApiClient.getUserMetrics(userInfo.id);
+    
+    // 创建X账号记录
+    const xAccount = await createXAccount({
       user_id: user.userId,
       x_user_id: userInfo.id,
       username: userInfo.username,
       display_name: userInfo.name,
-      email: userInfo.email,
-      avatar_url: userInfo.avatar_url,
+      avatar_url: userInfo.profile_image_url,
+      verified: userInfo.verified,
       bio: userInfo.description,
       location: userInfo.location,
-      verified: userInfo.verified,
-      followers_count: userInfo.public_metrics.followers_count,
-      following_count: userInfo.public_metrics.following_count,
-      tweets_count: userInfo.public_metrics.tweet_count,
-      listed_count: userInfo.public_metrics.listed_count,
-      account_created_at: new Date(userInfo.created_at),
+      website: userInfo.url,
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
-      token_expires_at: tokenExpiresAt,
-      scope: tokens.scope,
-      is_active: true,
-      is_primary: user_preferences.is_primary ?? false,
-      binding_status: 'active' as const,
+      token_expires_at: new Date(Date.now() + tokens.expiresIn * 1000),
+      binding_status: 'active',
+      followers_count: metrics.followers_count,
+      following_count: metrics.following_count,
+      tweets_count: metrics.tweet_count,
+      listed_count: metrics.listed_count,
       last_sync_at: new Date(),
-      auto_grow_enabled: user_preferences.auto_grow_enabled ?? false,
-      auto_grow_settings: user_preferences.auto_grow_settings ?? DEFAULT_AUTO_GROW_SETTINGS
-    };
+      is_active: true,
+      is_primary: false, // 默认不是主账号，可以根据业务逻辑调整
+      auto_grow_enabled: false
+    });
 
-    const newAccount = await createXAccount(xAccountData);
-
-    const response: BindXAccountResponse = {
+    return NextResponse.json({
       success: true,
       account: {
-        id: newAccount.id,
-        username: newAccount.username,
-        display_name: newAccount.display_name,
-        avatar_url: newAccount.avatar_url,
-        verified: newAccount.verified,
-        followers_count: newAccount.followers_count,
-        following_count: newAccount.following_count,
-        tweets_count: newAccount.tweets_count,
-        binding_status: newAccount.binding_status,
-        is_active: newAccount.is_active,
-        is_primary: newAccount.is_primary,
-        last_sync_at: newAccount.last_sync_at?.toISOString(),
-        auto_grow_enabled: newAccount.auto_grow_enabled,
-        created_at: newAccount.created_at.toISOString()
-      },
-      message: 'X account bound successfully'
-    };
-
-    return NextResponse.json(response);
+        id: xAccount.id,
+        x_user_id: xAccount.x_user_id,
+        username: xAccount.username,
+        display_name: xAccount.display_name,
+        avatar_url: xAccount.avatar_url,
+        verified: xAccount.verified,
+        followers_count: xAccount.followers_count,
+        following_count: xAccount.following_count,
+        tweets_count: xAccount.tweet_count,
+        binding_status: xAccount.binding_status,
+        is_primary: xAccount.is_primary,
+        last_sync_at: xAccount.last_sync_at,
+        created_at: xAccount.created_at
+      }
+    });
 
   } catch (error) {
-    console.error('OAuth callback error:', error);
+    console.error('X OAuth callback error:', error);
     
-    let errorMessage = 'Failed to bind X account';
-    if (error instanceof Error) {
-      if (error.message.includes('Invalid or expired state')) {
-        errorMessage = 'Authorization session expired. Please try again.';
-      } else if (error.message.includes('Token exchange failed')) {
-        errorMessage = 'Failed to exchange authorization code. Please try again.';
-      } else if (error.message.includes('Failed to get user info')) {
-        errorMessage = 'Failed to retrieve user information from X platform.';
-      }
-    }
-
-    const response: BindXAccountResponse = {
-      success: false,
-      error: errorMessage
-    };
-
-    return NextResponse.json(response, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'OAuth callback failed'
+      },
+      { status: 500 }
+    );
   }
 }
