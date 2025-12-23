@@ -56,3 +56,63 @@ export interface MonitoringResult {
     needsAction: boolean;
   };
 }
+
+export interface User {
+  id: string;
+  email: string;
+  passwordHash: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Wallet {
+  id: string;
+  userId: string;
+  balance: number;
+  currency: 'USDT';
+  address: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Transaction {
+  id: string;
+  userId: string;
+  type: 'deposit' | 'withdrawal' | 'payment';
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  description: string;
+  txHash?: string;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface GrowthTarget {
+  id: string;
+  userId: string;
+  accountId: string;
+  targetMetric: 'followers' | 'likes' | 'views' | 'comments';
+  targetValue: number;
+  currentValue: number;
+  deadline: Date;
+  autoOrderEnabled: boolean;
+  budgetLimit?: number;
+  status: 'active' | 'completed' | 'paused' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AuthSession {
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  token: string;
+  expiresAt: Date;
+}
