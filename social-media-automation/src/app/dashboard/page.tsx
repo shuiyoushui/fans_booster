@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GrowthTarget, SocialAccount, Wallet, AutoOrder } from '@/types';
 import { BindAccountModal, CreateTargetModal, RechargeModal, CommentTemplatesModal } from '@/components/Modals';
+import { XAccountList } from '@/components/XAccountList';
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
@@ -325,10 +326,20 @@ export default function Dashboard() {
 
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* 绑定账号 */}
+            {/* X账号绑定管理 */}
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">我的社交账号</h2>
+                <h2 className="text-xl font-semibold text-gray-900">X (Twitter) 账号管理</h2>
+              </div>
+              <div className="p-6">
+                <XAccountList />
+              </div>
+            </div>
+
+            {/* 传统社交账号绑定 */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">其他社交账号</h2>
                 <button 
                   onClick={() => setShowBindModal(true)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
