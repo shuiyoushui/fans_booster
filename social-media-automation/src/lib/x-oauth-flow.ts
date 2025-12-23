@@ -110,47 +110,53 @@ export class XOAuthFlowManager {
   /**
    * 处理授权回调，交换access token
    */
-  async handleCallback(code: string, state: string, storedState?: XOAuthState): Promise<XOAuthTokens> {
-    // 首先尝试从参数获取状态，然后从数据库查找
-    let stateData: XOAuthState | undefined = storedState;
+  async handleCallback(code: string, state: string): Promise<XOAuthTokens> {
+    console.log('Starting OAuth callback with state:', state.substring(0, 8) + '...');
+    
+    // 先从内存查找
+    let stateData: XOAuthState | undefined = this.stateStorage.get(state);
     
     if (!stateData) {
-      // 从内存查找
-      stateData = this.stateStorage.get(state);
-      
-      // 如果内存中没有，从数据库查找
-      if (!stateData) {
-        stateData = getOAuthState(state) || undefined;
-        console.log('OAuth state retrieved from database:', !!stateData);
-      } else {
-        console.log('OAuth state retrieved from memory');
-      }
+      // 从数据库查找
+      const dbStateData = getOAuthState(state);
+      console.log('OAuth state retrieved from database:', !!dbStateData);
+      stateData = dbStateData || undefined;
+    } else {
+      console.log('OAuth state retrieved from memory');
     }
     
     if (!stateData) {
       console.error('OAuth state not found:', state);
-      throw new Error('Invalid or expired state: state not found');
+      throw new Error('Invalid or expired state: state not found in storage');
     }
 
     // 检查时间戳（state有效期15分钟）
     const age = Date.now() - stateData.timestamp;
     if (age > 15 * 60 * 1000) {
-      console.error('OAuth state expired:', { state, age });
+      console.error('OAuth state expired:', { 
+        state: state.substring(0, 8) + '...', 
+        age: Math.round(age / 1000) + 's',
+        userId: stateData.userId
+      });
+      
       // 清理过期状态
       deleteOAuthState(state);
       this.stateStorage.delete(state);
       throw new Error(`Invalid or expired state: state expired (${Math.round(age / 1000)}s ago)`);
     }
 
-    console.log('OAuth state validated:', {
+    console.log('OAuth state validated successfully:', {
       state: state.substring(0, 8) + '...',
       age: Math.round(age / 1000) + 's',
-      userId: stateData.userId
+      userId: stateData.userId,
+      hasCodeVerifier: !!stateData.codeVerifier
     });
 
     try {
       // 交换access token
       const tokens = await this.exchangeCodeForToken(code, stateData.codeVerifier);
+      
+      console.log('Token exchange successful, cleaning up state...');
       
       // 清理状态
       deleteOAuthState(state);

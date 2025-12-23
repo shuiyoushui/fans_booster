@@ -36,7 +36,7 @@ export function saveOAuthState(stateData: XOAuthState): void {
       VALUES (?, ?, ?, ?, ?)
     `);
     
-    stmt.run(
+    const result = stmt.run(
       stateData.state,
       stateData.codeVerifier,
       stateData.codeChallenge,
@@ -44,10 +44,15 @@ export function saveOAuthState(stateData: XOAuthState): void {
       stateData.timestamp
     );
     
-    console.log('OAuth state saved:', stateData.state);
+    console.log('OAuth state saved successfully:', {
+      state: stateData.state.substring(0, 8) + '...',
+      userId: stateData.userId,
+      timestamp: stateData.timestamp,
+      changes: result.changes
+    });
   } catch (error) {
     console.error('Failed to save OAuth state:', error);
-    throw error;
+    throw new Error(`Failed to save OAuth state: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -62,16 +67,25 @@ export function getOAuthState(state: string): XOAuthState | null {
     
     const row = stmt.get(state) as any;
     if (!row) {
+      console.log('OAuth state not found:', state.substring(0, 8) + '...');
       return null;
     }
     
-    return {
+    const stateData = {
       state: row.state,
       codeVerifier: row.code_verifier,
       codeChallenge: row.code_challenge,
       userId: row.user_id,
       timestamp: row.timestamp
     };
+    
+    console.log('OAuth state retrieved successfully:', {
+      state: stateData.state.substring(0, 8) + '...',
+      userId: stateData.userId,
+      age: Math.round((Date.now() - stateData.timestamp) / 1000) + 's'
+    });
+    
+    return stateData;
   } catch (error) {
     console.error('Failed to get OAuth state:', error);
     return null;
@@ -85,7 +99,7 @@ export function deleteOAuthState(state: string): void {
   try {
     const stmt = db.prepare(`DELETE FROM oauth_states WHERE state = ?`);
     const result = stmt.run(state);
-    console.log('OAuth state deleted:', state, 'affected rows:', result.changes);
+    console.log('OAuth state deleted:', state.substring(0, 8) + '...', 'affected rows:', result.changes);
   } catch (error) {
     console.error('Failed to delete OAuth state:', error);
   }
@@ -105,7 +119,9 @@ export function cleanupExpiredStates(): void {
     `);
     
     const result = stmt.run(cutoffTime);
-    console.log('Cleaned up expired OAuth states:', result.changes, 'rows deleted');
+    if (result.changes > 0) {
+      console.log('Cleaned up expired OAuth states:', result.changes, 'rows deleted');
+    }
   } catch (error) {
     console.error('Failed to cleanup expired OAuth states:', error);
   }
@@ -122,6 +138,43 @@ export function getOAuthStateCount(): number {
   } catch (error) {
     console.error('Failed to get OAuth state count:', error);
     return 0;
+  }
+}
+
+/**
+ * 获取所有当前存储的OAuth状态（用于调试）
+ */
+export function getAllOAuthStates(): Array<{ state: string; user_id: string; timestamp: number; age: number }> {
+  try {
+    const stmt = db.prepare(`
+      SELECT state, user_id, timestamp FROM oauth_states ORDER BY timestamp DESC
+    `);
+    const rows = stmt.all() as any[];
+    const now = Date.now();
+    
+    return rows.map(row => ({
+      state: row.state,
+      user_id: row.user_id,
+      timestamp: row.timestamp,
+      age: Math.round((now - row.timestamp) / 1000) // age in seconds
+    }));
+  } catch (error) {
+    console.error('Failed to get all OAuth states:', error);
+    return [];
+  }
+}
+
+/**
+ * 检查特定状态是否存在
+ */
+export function checkOAuthStateExists(state: string): boolean {
+  try {
+    const stmt = db.prepare(`SELECT 1 FROM oauth_states WHERE state = ?`);
+    const result = stmt.get(state);
+    return !!result;
+  } catch (error) {
+    console.error('Failed to check OAuth state existence:', error);
+    return false;
   }
 }
 
