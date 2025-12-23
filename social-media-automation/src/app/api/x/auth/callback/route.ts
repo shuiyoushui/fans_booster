@@ -13,6 +13,14 @@ export async function POST(request: NextRequest) {
     const body: HandleOAuthCallbackRequest = await request.json();
     const { code, state, user_preferences = {} } = body;
 
+    // 添加调试日志
+    console.log('OAuth callback debug:', {
+      hasCode: !!code,
+      hasState: !!state,
+      codeLength: code?.length,
+      stateLength: state?.length
+    });
+
     if (!code || !state) {
       const response: BindXAccountResponse = {
         success: false,

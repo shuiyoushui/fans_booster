@@ -156,10 +156,18 @@ export const XOAuthCallback: React.FC = () => {
     const error = urlParams.get('error');
 
     if (error) {
-      // 授权失败
+      // 授权失败 - 获取详细错误信息
+      const errorDescription = urlParams.get('error_description') || error || 'Authorization failed';
+      console.error('X OAuth Error:', {
+        error,
+        errorDescription,
+        code: urlParams.get('code'),
+        state: urlParams.get('state')
+      });
+      
       window.opener?.postMessage({
         type: 'X_AUTH_ERROR',
-        error: error || 'Authorization failed'
+        error: errorDescription
       }, window.location.origin);
       window.close();
       return;
