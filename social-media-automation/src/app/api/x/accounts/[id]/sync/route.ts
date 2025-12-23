@@ -111,11 +111,11 @@ export async function POST(
         
         await updateXAccount(id, {
           display_name: userInfo.name,
-          avatar_url: userInfo.profile_image_url,
+          avatar_url: userInfo.profile_image_url || userInfo.avatar_url,
           verified: userInfo.verified,
           bio: userInfo.description,
           location: userInfo.location,
-          website: userInfo.url
+          website: userInfo.url || userInfo.website
         });
 
         syncResults.profile = {

@@ -376,7 +376,7 @@ export async function syncXAccount(
         
         await updateXAccount(accountId, {
           display_name: userInfo.name,
-          avatar_url: userInfo.profile_image_url,
+          avatar_url: userInfo.profile_image_url || userInfo.avatar_url,
           verified: userInfo.verified,
           bio: userInfo.description,
           location: userInfo.location,
@@ -400,14 +400,14 @@ export async function syncXAccount(
       }
 
       // 同步详细指标
-      if (options.sync_types.includes('metrics')) {
+      if (options.sync_types.includes('stats')) {
         const metrics = await xApiClient.getUserMetrics(account.x_user_id);
         
         // 更新额外的指标数据（可以存储在单独的表中）
         console.log('X Account metrics synced:', metrics);
 
         const metricsLog = mockSyncLogs.find(
-          log => log.x_account_id === accountId && log.sync_type === 'metrics'
+          log => log.x_account_id === accountId && log.sync_type === 'stats'
         );
         if (metricsLog) {
           metricsLog.sync_status = 'completed';

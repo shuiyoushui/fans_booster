@@ -30,9 +30,11 @@ export interface XUserInfo {
   name: string;
   email?: string;
   avatar_url?: string;
+  profile_image_url?: string;  // X API返回的字段名
   description?: string;
   location?: string;
   website?: string;
+  url?: string;  // X API返回的网站字段
   verified: boolean;
   public_metrics: {
     followers_count: number;
