@@ -3,14 +3,14 @@ import {
   getXAccountById, 
   updateXAccount, 
   deleteXAccount,
-  syncXAccount
+  updateXAccountsByCondition
 } from '@/lib/database-x-accounts';
 import { 
   XAccountDetailResponse, 
   UpdateXAccountRequest, 
   UnbindXAccountRequest,
-  SyncXAccountRequest,
-  XSyncType
+  DEFAULT_AUTO_GROW_SETTINGS,
+  XAutoGrowSettings
 } from '@/types/x-account';
 import jwt from 'jsonwebtoken';
 
@@ -20,11 +20,11 @@ import jwt from 'jsonwebtoken';
  */
 export async function GET(
   request: NextRequest, 
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = params;
+  const { id } = await params;
 
+  try {
     // 获取当前用户ID
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -86,8 +86,21 @@ export async function GET(
         scope: account.scope,
         last_error: account.last_error,
         auto_grow_settings: account.auto_grow_settings,
-        activities: account.activities || [],
-        sync_logs: account.sync_logs || []
+        activities: (account.activities || []).map(activity => ({
+          ...activity,
+          created_at: activity.created_at instanceof Date 
+            ? activity.created_at.toISOString() 
+            : activity.created_at
+        })),
+        sync_logs: (account.sync_logs || []).map(log => ({
+          ...log,
+          started_at: log.started_at instanceof Date 
+            ? log.started_at.toISOString() 
+            : log.started_at,
+          completed_at: log.completed_at instanceof Date 
+            ? log.completed_at.toISOString() 
+            : log.completed_at
+        }))
       }
     };
 
@@ -111,10 +124,10 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const updateData: UpdateXAccountRequest = await request.json();
 
     // 获取当前用户ID
@@ -150,14 +163,20 @@ export async function PUT(
 
     // 如果设置为主账号，需要先取消其他账号的主账号状态
     if (updateData.is_primary) {
-      await updateXAccount(
+      await updateXAccountsByCondition(
         { is_primary: false },
         { user_id: userId, is_primary: true }
       );
     }
 
     // 更新账号信息
-    const updatedAccount = await updateXAccount(id, updateData);
+    const updateDataForAccount = {
+      ...updateData,
+      auto_grow_settings: updateData.auto_grow_settings 
+        ? { ...DEFAULT_AUTO_GROW_SETTINGS, ...updateData.auto_grow_settings } as XAutoGrowSettings
+        : undefined
+    };
+    const updatedAccount = await updateXAccount(id, updateDataForAccount);
 
     return NextResponse.json({
       success: true,
@@ -196,10 +215,10 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 获取确认信息（从查询参数或请求体）
     const { searchParams } = new URL(request.url);
@@ -275,83 +294,6 @@ export async function DELETE(
     return NextResponse.json({
       success: false,
       error: 'Failed to unbind X account'
-    }, { status: 500 });
-  }
-}
-
-/**
- * 同步X账号数据
- * POST /api/x/accounts/[id]/sync
- */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { id } = params;
-    const syncData: SyncXAccountRequest = await request.json();
-
-    // 获取当前用户ID
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not authenticated'
-      }, { status: 401 });
-    }
-
-    const token = authHeader.substring(7);
-    let userId: string;
-    
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-      userId = decoded.userId;
-    } catch (error) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid authentication token'
-      }, { status: 401 });
-    }
-
-    // 检查账号是否存在且属于当前用户
-    const account = await getXAccountById(id, userId);
-    if (!account) {
-      return NextResponse.json({
-        success: false,
-        error: 'X account not found'
-      }, { status: 404 });
-    }
-
-    // 验证同步类型
-    const validSyncTypes: XSyncType[] = ['profile', 'followers', 'following', 'tweets', 'stats'];
-    const invalidTypes = syncData.sync_types.filter(type => !validSyncTypes.includes(type));
-    
-    if (invalidTypes.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: `Invalid sync types: ${invalidTypes.join(', ')}`
-      }, { status: 400 });
-    }
-
-    // 启动同步任务
-    const syncId = await syncXAccount(id, {
-      sync_types: syncData.sync_types,
-      force_sync: syncData.force_sync || false,
-      user_id: userId
-    });
-
-    return NextResponse.json({
-      success: true,
-      sync_id: syncId,
-      message: 'Sync task started successfully'
-    });
-
-  } catch (error) {
-    console.error('Sync X account error:', error);
-    
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to start sync task'
     }, { status: 500 });
   }
 }

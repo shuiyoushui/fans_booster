@@ -17,7 +17,9 @@ const mockPlatformConfig: XPlatformConfig = {
   id: 'platform-config-1',
   app_name: 'Social Media Automation',
   client_id: process.env.X_CLIENT_ID || '',
+  client_secret: process.env.X_CLIENT_SECRET || '',
   webhook_url: '',
+  webhook_secret: '',
   default_scopes: ['users.read', 'tweet.read', 'follows.read', 'follows.write', 'offline.access'],
   rate_limit_config: {
     follows_per_day: 400,
@@ -204,7 +206,7 @@ export async function getXAccountStats(userId: string): Promise<XAccountStats> {
     accounts_by_status: accountsByStatus,
     accounts_growth_today: accountsGrowthToday,
     sync_success_rate: syncSuccessRate,
-    last_sync_time: lastSyncTime || undefined
+    last_sync_time: lastSyncTime ? String(lastSyncTime) : undefined
   };
 }
 
@@ -233,7 +235,7 @@ export async function updateXAccount(
 /**
  * 批量更新X账号（根据条件）
  */
-export async function updateXAccount(
+export async function updateXAccountsByCondition(
   updateData: Partial<XAccount>,
   conditions: {
     user_id?: string;
@@ -378,7 +380,7 @@ export async function syncXAccount(
       await updateXAccount(accountId, {
         last_sync_at: new Date(),
         binding_status: 'active',
-        last_error: null
+        last_error: undefined
       });
 
     } catch (error) {

@@ -58,10 +58,10 @@ export class XOAuthFlowManager {
   /**
    * 生成OAuth 2.0授权URL
    */
-  generateAuthUrl(userId?: string): { url: string; state: string } {
+  async generateAuthUrl(userId?: string): Promise<{ url: string; state: string }> {
     const state = this.generateState(userId);
     const codeVerifier = this.generateCodeVerifier();
-    const codeChallenge = this.generateCodeChallenge(codeVerifier);
+    const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
     // 保存状态信息
     this.stateStorage.set(state, {

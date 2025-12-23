@@ -36,6 +36,10 @@ export interface XAccount {
   auto_grow_enabled: boolean;   // 是否启用自动增长
   auto_grow_settings?: XAutoGrowSettings; // 自动增长设置
   
+  // 关联数据（用于详细信息）
+  activities?: XAccountActivity[]; // 活动记录
+  sync_logs?: XAccountSyncLog[];   // 同步日志
+  
   // 时间戳
   created_at: Date;
   updated_at: Date;
@@ -61,8 +65,8 @@ export interface XAccountSyncLog {
   x_account_id: string;         // 关联X账号
   sync_type: 'profile' | 'followers' | 'following' | 'tweets' | 'stats';
   sync_status: 'pending' | 'running' | 'completed' | 'failed';
-  started_at: Date;
-  completed_at?: Date;
+  started_at: Date | string;
+  completed_at?: Date | string;
   records_processed: number;
   records_success: number;
   records_failed: number;
@@ -81,7 +85,7 @@ export interface XAccountActivity {
   platform_status: 'pending' | 'completed' | 'failed';
   platform_response?: string;    // 平台响应
   error_message?: string;
-  created_at: Date;
+  created_at: Date | string;
 }
 
 // X平台配置表（应用级配置）

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
 import { RefreshTokenRequest, RefreshTokenResponse } from '@/types/x-account';
-import { updateXAccountTokens } from '@/lib/database';
+import { updateXAccountTokens } from '@/lib/database-x-accounts';
 
 /**
  * 刷新X平台access token
@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
           access_token: tokens.accessToken,
           refresh_token: tokens.refreshToken || refresh_token,
           token_expires_at: tokenExpiresAt,
-          binding_status: 'active',
-          last_error: null,
+          binding_status: 'active' as const,
+          last_error: undefined,
           updated_at: new Date()
         });
       } catch (dbError) {
@@ -101,8 +101,10 @@ export async function PUT(request: NextRequest) {
       }, { status: 401 });
     }
 
-    // 从数据库获取X账号信息
-    const xAccount = await getXAccountById(accountId);
+    // 这里需要实现从数据库获取X账号的逻辑
+    // 暂时模拟一个xAccount对象
+    const xAccount: any = null; // 需要实现实际的数据库查询
+
     if (!xAccount) {
       return NextResponse.json({
         success: false,
@@ -129,8 +131,8 @@ export async function PUT(request: NextRequest) {
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken || xAccount.refresh_token,
       token_expires_at: tokenExpiresAt,
-      binding_status: 'active',
-      last_error: null,
+      binding_status: 'active' as const,
+      last_error: undefined,
       updated_at: new Date()
     });
 
@@ -143,12 +145,13 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Account token refresh error:', error);
     
-    // 如果refresh失败，更新账号状态为expired
     const { accountId } = await request.json();
     if (accountId) {
       try {
         await updateXAccountTokens(accountId, {
-          binding_status: 'expired',
+          access_token: '', // 清空token
+          refresh_token: '', // 清空refresh token
+          binding_status: 'expired' as const,
           last_error: 'Token refresh failed: ' + (error instanceof Error ? error.message : 'Unknown error'),
           updated_at: new Date()
         });
@@ -162,11 +165,4 @@ export async function PUT(request: NextRequest) {
       error: 'Failed to refresh token. Please re-authenticate with X platform.'
     }, { status: 401 });
   }
-}
-
-// 辅助函数 - 需要从database模块导入
-async function getXAccountById(accountId: string) {
-  // 这里需要实现从数据库获取X账号的逻辑
-  // 暂时返回null，实际实现时需要从数据库查询
-  return null;
 }

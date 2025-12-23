@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getXAccountsByUserId, getXAccountStats } from '@/lib/database-x-accounts';
+import { getXAccountsByUserId, getXAccountStats, updateXAccountsByCondition } from '@/lib/database-x-accounts';
 import { XAccountListResponse, XAccountStats } from '@/types/x-account';
 import jwt from 'jsonwebtoken';
 
@@ -66,9 +66,9 @@ export async function GET(request: NextRequest) {
         binding_status: account.binding_status,
         is_active: account.is_active,
         is_primary: account.is_primary,
-        last_sync_at: account.last_sync_at?.toISOString(),
+        last_sync_at: account.last_sync_at ? String(account.last_sync_at) : undefined,
         auto_grow_enabled: account.auto_grow_enabled,
-        created_at: account.created_at.toISOString()
+        created_at: String(account.created_at)
       })),
       total,
       page,
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       accounts_by_status: stats.accounts_by_status,
       accounts_growth_today: stats.accounts_growth_today,
       sync_success_rate: stats.sync_success_rate,
-      last_sync_time: stats.last_sync_time?.toISOString()
+      last_sync_time: stats.last_sync_time ? String(stats.last_sync_time) : undefined
     };
 
     return NextResponse.json({

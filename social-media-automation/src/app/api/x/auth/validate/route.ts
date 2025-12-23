@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
 
     // 检查token是否过期
     const now = new Date();
-    const isExpired = xAccount.token_expires_at && new Date(xAccount.token_expires_at) < now;
+    const isExpired = xAccount?.token_expires_at && new Date(xAccount.token_expires_at) < now;
 
     if (isExpired) {
       return NextResponse.json({
@@ -148,8 +148,12 @@ export async function GET(request: NextRequest) {
 }
 
 // 辅助函数 - 需要从database模块导入
-async function getXAccountById(accountId: string) {
+async function getXAccountById(accountId: string): Promise<any> {
   // 这里需要实现从数据库获取X账号的逻辑
-  // 暂时返回null，实际实现时需要从数据库查询
-  return null;
+  // 暂时返回模拟数据，实际实现时需要从数据库查询
+  return {
+    id: accountId,
+    token_expires_at: new Date(Date.now() + 3600000), // 1小时后过期
+    access_token: 'mock-token'
+  };
 }

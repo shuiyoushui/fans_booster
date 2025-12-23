@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 生成授权URL
-    const { url, state } = oauthManager.generateAuthUrl(userId);
+    const { url, state } = await oauthManager.generateAuthUrl(userId);
 
     const response: GenerateAuthUrlResponse = {
       success: true,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -143,5 +143,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return React.createElement(AuthContext.Provider, { value }, children);
 };

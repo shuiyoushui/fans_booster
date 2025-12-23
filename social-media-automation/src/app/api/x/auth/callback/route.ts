@@ -11,7 +11,7 @@ import jwt from 'jsonwebtoken';
 export async function POST(request: NextRequest) {
   try {
     const body: HandleOAuthCallbackRequest = await request.json();
-    const { code, state, userPreferences = {} } = body;
+    const { code, state, user_preferences = {} } = body;
 
     if (!code || !state) {
       const response: BindXAccountResponse = {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         scope: tokens.scope,
         binding_status: 'active',
         last_sync_at: new Date(),
-        last_error: null,
+        last_error: undefined,
         username: userInfo.username,
         display_name: userInfo.name,
         avatar_url: userInfo.avatar_url,
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
         following_count: userInfo.public_metrics.following_count,
         tweets_count: userInfo.public_metrics.tweet_count,
         listed_count: userInfo.public_metrics.listed_count,
-        auto_grow_enabled: userPreferences.auto_grow_enabled ?? false,
-        auto_grow_settings: userPreferences.auto_grow_settings ?? DEFAULT_AUTO_GROW_SETTINGS,
+        auto_grow_enabled: user_preferences.auto_grow_enabled ?? false,
+        auto_grow_settings: user_preferences.auto_grow_settings ?? DEFAULT_AUTO_GROW_SETTINGS,
         updated_at: new Date()
       });
 
@@ -139,11 +139,11 @@ export async function POST(request: NextRequest) {
       token_expires_at: tokenExpiresAt,
       scope: tokens.scope,
       is_active: true,
-      is_primary: userPreferences.is_primary ?? false,
+      is_primary: user_preferences.is_primary ?? false,
       binding_status: 'active' as const,
       last_sync_at: new Date(),
-      auto_grow_enabled: userPreferences.auto_grow_enabled ?? false,
-      auto_grow_settings: userPreferences.auto_grow_settings ?? DEFAULT_AUTO_GROW_SETTINGS
+      auto_grow_enabled: user_preferences.auto_grow_enabled ?? false,
+      auto_grow_settings: user_preferences.auto_grow_settings ?? DEFAULT_AUTO_GROW_SETTINGS
     };
 
     const newAccount = await createXAccount(xAccountData);
