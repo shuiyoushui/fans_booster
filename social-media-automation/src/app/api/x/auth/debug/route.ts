@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOAuthStateCount, getAllOAuthStates, checkOAuthStateExists } from '@/lib/database-oauth-states';
+import { getOAuthStateStats } from '@/lib/simple-oauth-state';
 
 /**
  * OAuth状态调试端点
@@ -7,33 +7,16 @@ import { getOAuthStateCount, getAllOAuthStates, checkOAuthStateExists } from '@/
  */
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const state = searchParams.get('state');
-    
-    if (state) {
-      // 检查特定状态
-      const exists = checkOAuthStateExists(state);
-      return NextResponse.json({
-        success: true,
-        state_check: {
-          state: state.substring(0, 8) + '...',
-          exists: exists
-        }
-      });
-    }
-    
-    // 获取所有状态信息
-    const count = getOAuthStateCount();
-    const states = getAllOAuthStates();
+    const stats = getOAuthStateStats();
     
     return NextResponse.json({
       success: true,
       debug_info: {
-        total_states: count,
+        total_states: stats.total,
         current_time: new Date().toISOString(),
-        states: states.map(s => ({
-          state: s.state.substring(0, 8) + '...',
-          user_id: s.user_id || 'anonymous',
+        states: stats.states.map(s => ({
+          state: s.state,
+          user_id: s.userId || 'anonymous',
           age_seconds: s.age,
           age_formatted: s.age < 60 ? `${s.age}s` : 
                         s.age < 3600 ? `${Math.round(s.age / 60)}m` : 

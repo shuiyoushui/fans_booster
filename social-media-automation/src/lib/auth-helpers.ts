@@ -14,17 +14,25 @@ export interface AuthenticatedUser {
 export function authenticateRequest(request: NextRequest): AuthenticatedUser | null {
   const authHeader = request.headers.get('authorization');
   
+  console.log('Auth header:', authHeader?.substring(0, 20) + '...');
+  
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('No Bearer token found');
     return null;
   }
 
   const token = authHeader.substring(7); // 移除 'Bearer ' 前缀
+  console.log('Token extracted:', token.substring(0, 20) + '...');
 
   try {
     const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+    console.log('Using JWT secret:', jwtSecret.substring(0, 10) + '...');
+    
     const decoded = jwt.verify(token, jwtSecret) as any;
+    console.log('JWT decoded successfully:', { userId: decoded.userId, email: decoded.email });
 
     if (!decoded || !decoded.userId) {
+      console.log('Invalid JWT payload');
       return null;
     }
 
@@ -33,7 +41,8 @@ export function authenticateRequest(request: NextRequest): AuthenticatedUser | n
       email: decoded.email
     };
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.error('JWT verification error:', error.message);
+    console.error('JWT error details:', error);
     return null;
   }
 }

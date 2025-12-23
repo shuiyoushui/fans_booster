@@ -1,7 +1,7 @@
 // X平台OAuth 2.0授权流程机制
 // 基于Twitter API v2的Authorization Code Flow with PKCE
 
-import { saveOAuthState, getOAuthState, deleteOAuthState, cleanupExpiredStates } from './database-oauth-states';
+import { saveOAuthState, getOAuthState, deleteOAuthState, getOAuthStateStats } from './simple-oauth-state';
 
 export interface XOAuthConfig {
   clientId: string;
@@ -53,7 +53,6 @@ export interface XUserInfo {
  */
 export class XOAuthFlowManager {
   private config: XOAuthConfig;
-  private stateStorage = new Map<string, XOAuthState>(); // 临时内存存储，用于调试
 
   constructor(config: XOAuthConfig) {
     this.config = config;
@@ -63,6 +62,7 @@ export class XOAuthFlowManager {
    * 生成OAuth 2.0授权URL
    */
   async generateAuthUrl(userId?: string): Promise<{ url: string; state: string }> {
+    
     const state = this.generateState(userId);
     const codeVerifier = this.generateCodeVerifier();
     const codeChallenge = await this.generateCodeChallenge(codeVerifier);
@@ -76,20 +76,20 @@ export class XOAuthFlowManager {
     };
 
     try {
-      // 保存到数据库（持久化存储）
+      // 保存到状态管理器
       saveOAuthState(stateData);
       
-      // 同时保存到内存（用于快速访问和调试）
-      this.stateStorage.set(state, stateData);
+      // 立即验证状态是否正确保存
+      const verification = getOAuthState(state);
+      if (!verification) {
+        throw new Error('State verification failed immediately after save');
+      }
       
-      console.log('OAuth state generated and saved:', {
-        state: state.substring(0, 8) + '...',
-        userId,
-        timestamp: stateData.timestamp
-      });
+      console.log('OAuth state generated and saved successfully');
+      
     } catch (error) {
       console.error('Failed to save OAuth state:', error);
-      throw new Error('Failed to generate OAuth state');
+      throw new Error(`Failed to generate OAuth state: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     const params = new URLSearchParams({
@@ -113,21 +113,15 @@ export class XOAuthFlowManager {
   async handleCallback(code: string, state: string): Promise<XOAuthTokens> {
     console.log('Starting OAuth callback with state:', state.substring(0, 8) + '...');
     
-    // 先从内存查找
-    let stateData: XOAuthState | undefined = this.stateStorage.get(state);
+    // 从状态管理器查找
+    const stateData = getOAuthState(state);
     
     if (!stateData) {
-      // 从数据库查找
-      const dbStateData = getOAuthState(state);
-      console.log('OAuth state retrieved from database:', !!dbStateData);
-      stateData = dbStateData || undefined;
-    } else {
-      console.log('OAuth state retrieved from memory');
-    }
-    
-    if (!stateData) {
+      // 调试：获取状态统计
+      const stats = getOAuthStateStats();
       console.error('OAuth state not found:', state);
-      throw new Error('Invalid or expired state: state not found in storage');
+      console.log('Current states:', stats);
+      throw new Error(`Invalid or expired state: state not found in storage. Available states: ${stats.total}`);
     }
 
     // 检查时间戳（state有效期15分钟）
@@ -141,7 +135,6 @@ export class XOAuthFlowManager {
       
       // 清理过期状态
       deleteOAuthState(state);
-      this.stateStorage.delete(state);
       throw new Error(`Invalid or expired state: state expired (${Math.round(age / 1000)}s ago)`);
     }
 
@@ -160,14 +153,12 @@ export class XOAuthFlowManager {
       
       // 清理状态
       deleteOAuthState(state);
-      this.stateStorage.delete(state);
       
       return tokens;
     } catch (error) {
       console.error('Token exchange failed:', error);
       // 清理状态
       deleteOAuthState(state);
-      this.stateStorage.delete(state);
       throw error;
     }
   }
@@ -342,21 +333,7 @@ export class XOAuthFlowManager {
     };
   }
 
-  /**
-   * 清理过期的state
-   */
-  cleanupExpiredStates(): void {
-    // 清理内存中的过期状态
-    const now = Date.now();
-    for (const [state, stateData] of this.stateStorage.entries()) {
-      if (now - stateData.timestamp > 15 * 60 * 1000) {
-        this.stateStorage.delete(state);
-      }
-    }
-    
-    // 清理数据库中的过期状态
-    cleanupExpiredStates();
-  }
+
 }
 
 /**
