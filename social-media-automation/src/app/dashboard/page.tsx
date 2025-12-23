@@ -326,11 +326,41 @@ export default function Dashboard() {
 
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Twitter账号管理 */}
+            {/* X平台账号管理 */}
             <div className="bg-white rounded-lg shadow">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">Twitter 账号管理</h2>
-                <span className="text-sm text-gray-500">基于Twint数据采集</span>
+                <h2 className="text-xl font-semibold text-gray-900">X平台账号管理</h2>
+                <a 
+                  href="/x-accounts"
+                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  查看详情 →
+                </a>
+              </div>
+              <div className="p-6">
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.067 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">X平台OAuth 2.0授权</h3>
+                  <p className="text-gray-600 mb-4">通过官方OAuth 2.0安全授权管理您的X平台账号</p>
+                  <a 
+                    href="/x-accounts"
+                    className="inline-block bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    管理X账号
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Twitter数据采集 */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">Twitter 数据采集</h2>
+                <span className="text-sm text-gray-500">基于Twint技术</span>
               </div>
               <div className="p-6">
                 <TwitterAccountManager />
