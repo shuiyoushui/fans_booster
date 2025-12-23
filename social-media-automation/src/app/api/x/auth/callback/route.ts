@@ -48,7 +48,30 @@ export async function POST(request: NextRequest) {
     console.log('Handling OAuth callback with state:', state.substring(0, 8) + '...');
     
     // 处理OAuth回调，获取access token
-    const tokens = await oauthManager.handleCallback(code, state);
+    let tokens;
+    try {
+      tokens = await oauthManager.handleCallback(code, state);
+    } catch (error) {
+      console.error('OAuth callback handling failed:', error);
+      
+      // 如果是state过期错误，提供自动重试机制
+      if (error instanceof Error && error.message.includes('Expired authorization URL')) {
+        console.log('Detected expired state, offering automatic retry...');
+        
+        return NextResponse.json({
+          success: false,
+          error: 'Authorization URL has expired',
+          auto_retry_available: true,
+          details: {
+            original_error: error.message,
+            resolution: 'We can automatically generate a new authorization URL for you.',
+            action_required: 'Please request a new authorization URL to continue.'
+          }
+        }, { status: 410 }); // 410 Gone - resource no longer available
+      }
+      
+      throw error; // 重新抛出其他错误
+    }
     
     console.log('OAuth tokens received successfully:', {
       hasAccessToken: !!tokens.accessToken,

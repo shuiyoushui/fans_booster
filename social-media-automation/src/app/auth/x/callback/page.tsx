@@ -74,19 +74,34 @@ function XOAuthCallbackInner() {
             window.close();
           }, 3000);
         } else {
-          throw new Error(data.error || '绑定失败');
+          // 传递完整的错误数据，包括自动重试信息
+          throw new Error(JSON.stringify(data));
         }
 
       } catch (error) {
         setStatus('error');
-        setMessage(error instanceof Error ? error.message : '未知错误');
         
-        // 通知父窗口失败
+        let errorMessage = error instanceof Error ? error.message : '未知错误';
+        let errorData = null;
+        
+        // 尝试解析JSON格式的错误信息
+        try {
+          errorData = JSON.parse(errorMessage);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // 如果不是JSON格式，保持原始错误信息
+          errorData = { error: errorMessage };
+        }
+        
+        setMessage(errorMessage);
+        
+        // 通知父窗口失败，传递完整的错误数据
         const opener = window.opener;
         if (opener) {
           opener.postMessage({
             type: 'X_OAUTH_ERROR',
-            error: error instanceof Error ? error.message : '未知错误'
+            error: errorMessage,
+            data: errorData
           }, window.location.origin);
         }
         

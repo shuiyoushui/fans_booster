@@ -164,8 +164,20 @@ export default function XAccountManager() {
           // 清理临时token
           sessionStorage.removeItem('temp_auth_token');
           
-          toast.error(event.data.error || '授权失败');
-          setIsBinding(false);
+          const errorData = event.data.data;
+          
+          // 检查是否是过期state错误，如果是，提供自动重试
+          if (errorData?.auto_retry_available) {
+            toast.error('授权链接已过期，正在重新生成...', { duration: 2000 });
+            
+            // 自动重试
+            setTimeout(() => {
+              handleOAuthRetry(errorData);
+            }, 2000);
+          } else {
+            toast.error(errorData?.error || '授权失败');
+            setIsBinding(false);
+          }
         }
       };
 
@@ -183,6 +195,107 @@ export default function XAccountManager() {
     } catch (error) {
       console.error('X OAuth错误:', error);
       toast.error(error instanceof Error ? error.message : '授权失败');
+      setIsBinding(false);
+    }
+  };
+
+  // OAuth重试处理
+  const handleOAuthRetry = async (errorData: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('请先登录');
+        setIsBinding(false);
+        return;
+      }
+
+      // 调用重试API
+      const retryResponse = await fetch('/api/x/auth/retry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          expired_state: errorData.original_error?.includes('state') ? 'expired_state_detected' : null
+        })
+      });
+
+      if (!retryResponse.ok) {
+        throw new Error('重试请求失败');
+      }
+
+      const retryData = await retryResponse.json();
+      if (!retryData.success) {
+        throw new Error(retryData.error || '生成新授权链接失败');
+      }
+
+      // 使用新的授权URL重新开始流程
+      toast.success('已生成新的授权链接，正在重新打开...');
+      
+      // 临时存储token供回调页面使用
+      sessionStorage.setItem('temp_auth_token', token);
+
+      // 打开新的授权窗口
+      const authWindow = window.open(
+        retryData.auth_url,
+        'x_oauth_retry',
+        'width=600,height=700,scrollbars=yes,resizable=yes'
+      );
+
+      if (!authWindow) {
+        throw new Error('无法打开授权窗口，请检查浏览器弹窗设置');
+      }
+
+      // 监听新的授权回调
+      const retryMessageHandler = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data.type === 'X_OAUTH_SUCCESS') {
+          window.removeEventListener('message', retryMessageHandler);
+          authWindow?.close();
+
+          // 清理临时token
+          sessionStorage.removeItem('temp_auth_token');
+
+          // 刷新账号列表
+          toast.success('X账号绑定成功！');
+          fetchAccounts();
+          fetchStats();
+          setIsBinding(false);
+        } else if (event.data.type === 'X_OAUTH_ERROR') {
+          window.removeEventListener('message', retryMessageHandler);
+          authWindow?.close();
+          
+          // 清理临时token
+          sessionStorage.removeItem('temp_auth_token');
+          
+          const retryErrorData = event.data.data;
+          if (retryErrorData?.auto_retry_available) {
+            // 避免无限重试，最多重试一次
+            toast.error('授权链接再次过期，请手动重试');
+            setIsBinding(false);
+          } else {
+            toast.error(retryErrorData?.error || '授权失败');
+            setIsBinding(false);
+          }
+        }
+      };
+
+      window.addEventListener('message', retryMessageHandler);
+
+      // 监听窗口关闭
+      const retryCheckClosed = setInterval(() => {
+        if (authWindow?.closed) {
+          clearInterval(retryCheckClosed);
+          window.removeEventListener('message', retryMessageHandler);
+          setIsBinding(false);
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error('OAuth重试错误:', error);
+      toast.error(error instanceof Error ? error.message : '重试失败');
       setIsBinding(false);
     }
   };
