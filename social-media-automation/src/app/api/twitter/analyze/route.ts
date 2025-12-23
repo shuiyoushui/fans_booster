@@ -1,14 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import jwt from 'jsonwebtoken';
 
 const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 
+// 验证JWT token
+function verifyToken(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  console.log('Authorization header:', authHeader);
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('No Bearer token found');
+    return null;
+  }
+
+  const token = authHeader.substring(7);
+  const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+  console.log('Token:', token.substring(0, 20) + '...');
+  console.log('JWT_SECRET:', JWT_SECRET.substring(0, 10) + '...');
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    console.log('Decoded token:', decoded);
+    return decoded;
+  } catch (error) {
+    console.error('JWT verification error:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户会话
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    // 验证JWT token
+    const user = verifyToken(request);
+    if (!user?.userId || !user?.email) {
       return NextResponse.json(
         { success: false, message: '未授权访问' },
         { status: 401 }
