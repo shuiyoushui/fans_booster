@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
+import { createXOAuthFlowManager } from '@/lib/x-oauth-flow-dev';
 import { requireAuth } from '@/lib/auth-helpers';
 
 /**

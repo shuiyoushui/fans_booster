@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createXOAuthFlowManager } from '@/lib/x-oauth-flow';
+import { createXOAuthFlowManager } from '@/lib/x-oauth-flow-dev';
 import { createXAPIClient } from '@/lib/x-api-client';
 import { requireAuth } from '@/lib/auth-helpers';
 import { createXAccount } from '@/lib/database-x-accounts';
@@ -50,7 +50,20 @@ export async function POST(request: NextRequest) {
     // 处理OAuth回调，获取access token
     let tokens;
     try {
-      tokens = await oauthManager.handleCallback(code, state);
+      // 检查是否为开发环境的模拟回调
+      if (code.startsWith('mock_code_')) {
+        console.log('DEV MODE: Processing mock callback');
+        // 开发环境直接使用模拟tokens
+        tokens = {
+          accessToken: `mock_access_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          refreshToken: `mock_refresh_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          tokenType: 'Bearer',
+          expiresIn: 7200,
+          scope: 'users.read offline.access tweet.read follows.read'
+        };
+      } else {
+        tokens = await oauthManager.handleCallback(code, state);
+      }
     } catch (error) {
       console.error('OAuth callback handling failed:', error);
       
@@ -85,7 +98,16 @@ export async function POST(request: NextRequest) {
     console.log('Fetching user info from X API...');
     
     // 获取用户信息
-    const userInfo = await xApiClient.getUserInfo();
+    let userInfo;
+    if (tokens.accessToken.startsWith('mock_access_token_')) {
+      // 开发环境使用模拟用户信息
+      userInfo = await oauthManager.getUserInfo(tokens.accessToken);
+    } else {
+      // 生产环境使用真实API
+      const { createXAPIClient } = await import('@/lib/x-api-client');
+      const xApiClient = createXAPIClient(tokens.accessToken);
+      userInfo = await xApiClient.getUserInfo();
+    }
     
     console.log('User info retrieved:', {
       userId: userInfo.id,
@@ -96,7 +118,21 @@ export async function POST(request: NextRequest) {
     console.log('Fetching user metrics from X API...');
     
     // 获取用户详细指标数据
-    const metrics = await xApiClient.getUserMetrics(userInfo.id);
+    let metrics;
+    if (tokens.accessToken.startsWith('mock_access_token_')) {
+      // 开发环境使用模拟指标
+      metrics = {
+        followers_count: userInfo.public_metrics.followers_count,
+        following_count: userInfo.public_metrics.following_count,
+        tweet_count: userInfo.public_metrics.tweet_count,
+        listed_count: userInfo.public_metrics.listed_count
+      };
+    } else {
+      // 生产环境使用真实API
+      const { createXAPIClient } = await import('@/lib/x-api-client');
+      const xApiClient = createXAPIClient(tokens.accessToken);
+      metrics = await xApiClient.getUserMetrics(userInfo.id);
+    }
     
     console.log('User metrics retrieved:', {
       followers: metrics.followers_count,
