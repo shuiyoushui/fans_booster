@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function XOAuthMockCallback() {
+function XOAuthMockCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -140,5 +141,17 @@ export default function XOAuthMockCallback() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function XOAuthMockCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
+      </div>
+    }>
+      <XOAuthMockCallbackContent />
+    </Suspense>
   );
 }
