@@ -2,13 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GrowthTarget, SocialAccount, MonitoringResult, OrderSuggestion } from '@/types';
 import db from '@/lib/database';
 
-// 模拟服务价格数据
+// FansGurus 实际服务价格数据（基于官网价格更新）
+const fansGurusServicePrices = {
+  followers: {
+    standard: { rate: 0.002, min: 100, max: 50000, time: '1-3 days', quality: 'standard' },
+    premium: { rate: 0.005, min: 100, max: 100000, time: '1-3 days', quality: 'HQ/REAL' },
+    targeted: { rate: 0.008, min: 100, max: 50000, time: '1-3 days', quality: '地区定向' },
+    instant: { rate: 0.0024, min: 100, max: 10000, time: '5-15 minutes', quality: '即时启动' },
+    longterm: { rate: 0.0022, min: 1000, max: 100000, time: '30-365 days', quality: 'R30-R365补量' }
+  },
+  likes: {
+    standard: { rate: 0.0008, min: 50, max: 50000, time: '1-2 hours', quality: 'standard' },
+    premium: { rate: 0.0012, min: 50, max: 100000, time: '1-2 hours', quality: 'HQ/REAL' },
+    instant: { rate: 0.001, min: 50, max: 20000, time: '30 minutes', quality: '即时启动' }
+  },
+  views: {
+    standard: { rate: 0.00008, min: 1000, max: 1000000, time: '30 minutes', quality: 'standard' },
+    premium: { rate: 0.00012, min: 1000, max: 2000000, time: '30 minutes', quality: 'HQ/REAL' }
+  },
+  comments: {
+    standard: { rate: 0.008, min: 10, max: 10000, time: '1-2 hours', quality: 'standard' },
+    premium: { rate: 0.012, min: 10, max: 20000, time: '1-2 hours', quality: 'HQ/REAL' }
+  },
+  shares: {
+    standard: { rate: 0.006, min: 50, max: 50000, time: '2-4 hours', quality: 'standard' },
+    premium: { rate: 0.01, min: 50, max: 100000, time: '2-4 hours', quality: 'HQ/REAL' }
+  }
+};
+
+// 默认价格数据（向后兼容）
 const servicePrices = {
-  followers: { rate: 0.05, min: 100, max: 100000, time: '1-3 days' },
-  likes: { rate: 0.001, min: 50, max: 50000, time: '1-2 hours' },
-  views: { rate: 0.0001, min: 1000, max: 1000000, time: '30 minutes' },
-  comments: { rate: 0.01, min: 10, max: 10000, time: '1-2 hours' },
-  shares: { rate: 0.008, min: 50, max: 50000, time: '2-4 hours' }
+  followers: fansGurusServicePrices.followers.standard,
+  likes: fansGurusServicePrices.likes.standard,
+  views: fansGurusServicePrices.views.standard,
+  comments: fansGurusServicePrices.comments.standard,
+  shares: fansGurusServicePrices.shares.standard
 };
 
 // 模拟数据库数据（实际应该从其他API获取）
@@ -38,6 +66,12 @@ function calculateGapAndSuggestions(
   percentageGap: number;
   needsAction: boolean;
   suggestedOrders: OrderSuggestion[];
+  budgetAnalysis: {
+    totalRequired: number;
+    remainingBalance: number;
+    affordablePackages: any[];
+    budgetGap: number;
+  };
 } {
   const currentValue = currentData[target.targetMetric] || target.currentValue;
   const difference = Math.max(0, target.targetValue - currentValue);
@@ -46,48 +80,68 @@ function calculateGapAndSuggestions(
 
   // 生成订单建议
   const suggestedOrders: OrderSuggestion[] = [];
+  let totalRequiredBudget = 0;
+  
   if (needsAction && target.autoOrderEnabled) {
-    const serviceType = target.targetMetric as keyof typeof servicePrices;
-    const priceInfo = servicePrices[serviceType];
+    const serviceType = target.targetMetric as keyof typeof fansGurusServicePrices;
+    const priceCategories = fansGurusServicePrices[serviceType];
     
-    if (priceInfo) {
-      // 计算最优套餐组合
+    if (priceCategories) {
+      // 生成不同质量等级的套餐选项
       const packages = [];
-      let remainingQuantity = difference;
-
-      // 生成多个套餐选项
-      const multipliers = [0.5, 1, 2, 3]; // 不同倍数的套餐
-      for (const multiplier of multipliers) {
+      
+      Object.entries(priceCategories).forEach(([quality, priceInfo]) => {
         const packageQuantity = Math.min(
-          Math.ceil(difference * multiplier),
+          Math.ceil(difference * 1.1), // 多10%以应对自然流失
           priceInfo.max
         );
         
         if (packageQuantity >= priceInfo.min) {
+          const packageCost = packageQuantity * priceInfo.rate;
           packages.push({
-            id: `${serviceType}_${packageQuantity}`,
-            name: `${packageQuantity} ${serviceType} package`,
+            id: `${serviceType}_${quality}_${packageQuantity}`,
+            name: `${packageQuantity} ${serviceType} (${quality})`,
             quantity: packageQuantity,
-            price: packageQuantity * priceInfo.rate,
-            estimatedTime: priceInfo.time
+            price: packageCost,
+            estimatedTime: priceInfo.time,
+            quality: quality,
+            rate: priceInfo.rate
           });
         }
-      }
+      });
+
+      // 按价格排序，优先推荐性价比高的套餐
+      packages.sort((a, b) => a.price - b.price);
+      
+      // 计算完成目标所需总预算（使用最经济方案）
+      totalRequiredBudget = packages[0]?.price || 0;
 
       suggestedOrders.push({
         serviceType,
         requiredQuantity: difference,
-        estimatedCost: difference * priceInfo.rate,
+        estimatedCost: totalRequiredBudget,
         recommendedPackages: packages
       });
     }
   }
 
+  // 预算分析（模拟用户余额，实际应从钱包API获取）
+  const mockUserBalance = 100; // 假设用户有100 USDT
+  const remainingBalance = mockUserBalance - totalRequiredBudget;
+  const affordablePackages = suggestedOrders[0]?.recommendedPackages.filter(pkg => pkg.price <= mockUserBalance) || [];
+  const budgetGap = Math.max(0, totalRequiredBudget - mockUserBalance);
+
   return {
     difference,
     percentageGap,
     needsAction,
-    suggestedOrders
+    suggestedOrders,
+    budgetAnalysis: {
+      totalRequired: totalRequiredBudget,
+      remainingBalance,
+      affordablePackages,
+      budgetGap
+    }
   };
 }
 
@@ -150,16 +204,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       targetId: target.id,
       currentMetrics: currentData,
-      gapAnalysis: analysis,
+      gapAnalysis: {
+        difference: analysis.difference,
+        percentageGap: analysis.percentageGap,
+        needsAction: analysis.needsAction,
+        suggestedOrders: analysis.suggestedOrders
+      },
       monitoringResult,
+      budgetAnalysis: analysis.budgetAnalysis,
       recommendation: analysis.needsAction ? {
         action: 'PLACE_ORDER',
         urgency: analysis.percentageGap > 50 ? 'HIGH' : analysis.percentageGap > 20 ? 'MEDIUM' : 'LOW',
-        estimatedCost: analysis.suggestedOrders[0]?.estimatedCost || 0,
-        suggestedPackage: analysis.suggestedOrders[0]?.recommendedPackages[0] || null
+        estimatedCost: analysis.budgetAnalysis.totalRequired,
+        suggestedPackage: analysis.suggestedOrders[0]?.recommendedPackages.find(pkg => pkg.quality === 'standard') || analysis.suggestedOrders[0]?.recommendedPackages[0],
+        budgetGap: analysis.budgetAnalysis.budgetGap,
+        canAfford: analysis.budgetAnalysis.budgetGap <= 0,
+        affordablePackages: analysis.budgetAnalysis.affordablePackages
       } : {
         action: 'MONITOR',
-        message: '当前进展良好，继续监控'
+        message: '当前进展良好，继续监控',
+        completionRate: (100 - analysis.percentageGap).toFixed(1) + '%'
       }
     });
 
