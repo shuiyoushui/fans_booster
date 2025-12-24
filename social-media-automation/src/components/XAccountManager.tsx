@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 interface XAccountInfo {
   id: string;
@@ -395,109 +396,185 @@ export default function XAccountManager() {
   if (!mounted) return null;
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">X平台账号管理</h1>
-        <p className="text-gray-600">通过OAuth 2.0安全授权管理您的X平台账号</p>
-        
-        {/* 认证状态检查 */}
-        {(() => {
-          const token = localStorage.getItem('token');
-          const user = localStorage.getItem('user');
-          if (!token || !user) {
-            return (
-              <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-md p-4">
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-yellow-800">
-                    请先 <a href="/auth" className="text-blue-600 hover:underline">登录</a> 后再使用此功能
-                  </span>
-                </div>
-              </div>
-            );
-          }
-          return null;
-        })()}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      <div className="max-w-7xl mx-auto p-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10"
+        >
+          <h1 className="text-4xl font-bold text-white mb-3 flex items-center">
+            <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mr-4 shadow-xl">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.067 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
+              </svg>
+            </div>
+            X平台智能管理中心
+          </h1>
+          <p className="text-gray-300 text-lg">通过OAuth 2.0安全授权和AI驱动的API实时管理您的X平台账号</p>
+          
+          {/* 认证状态检查 */}
+          {(() => {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            if (!token || !user) {
+              return (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-6 bg-yellow-500/10 backdrop-blur-md border border-yellow-500/30 rounded-2xl p-6"
+                >
+                  <div className="flex items-center">
+                    <svg className="w-6 h-6 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-yellow-300">
+                      请先 <a href="/auth" className="text-blue-400 hover:text-blue-300 underline font-medium">登录</a> 后再使用此功能
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            }
+            return null;
+          })()}
+        </motion.div>
 
-      {/* 统计卡片 */}
+      {/* 科技感统计卡片 */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10"
+        >
+          <motion.div
+            whileHover={{ scale: 1.05, y: -2 }}
+            className="bg-gradient-to-br from-blue-600/20 to-indigo-800/20 backdrop-blur-md border border-blue-500/30 rounded-2xl p-6 shadow-xl hover:shadow-blue-500/25 transition-all"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">总账号数</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.total_accounts}</p>
+                <p className="text-sm font-medium text-blue-200">总账号数</p>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-3xl font-bold text-white"
+                >
+                  {stats.total_accounts}
+                </motion.p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
             </div>
-          </div>
+            <div className="mt-4 h-1 bg-blue-500/30 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: '75%' }}
+                transition={{ delay: 0.6, duration: 1 }}
+                className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full"
+              />
+            </div>
+          </motion.div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <motion.div
+            whileHover={{ scale: 1.05, y: -2 }}
+            className="bg-gradient-to-br from-green-600/20 to-emerald-800/20 backdrop-blur-md border border-green-500/30 rounded-2xl p-6 shadow-xl hover:shadow-green-500/25 transition-all"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">活跃账号</p>
-                <p className="text-2xl font-semibold text-green-600">{stats.active_accounts}</p>
+                <p className="text-sm font-medium text-green-200">活跃账号</p>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-3xl font-bold text-white"
+                >
+                  {stats.active_accounts}
+                </motion.p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">总粉丝数</p>
-                <p className="text-2xl font-semibold text-gray-900">{formatNumber(stats.total_followers)}</p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
+            <div className="mt-4 h-1 bg-green-500/30 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${(stats.active_accounts / stats.total_accounts) * 100}%` }}
+                transition={{ delay: 0.7, duration: 1 }}
+                className="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full"
+              />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <motion.div
+            whileHover={{ scale: 1.05, y: -2 }}
+            className="bg-gradient-to-br from-purple-600/20 to-pink-800/20 backdrop-blur-md border border-purple-500/30 rounded-2xl p-6 shadow-xl hover:shadow-purple-500/25 transition-all"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">同步成功率</p>
-                <p className="text-2xl font-semibold text-blue-600">{stats.sync_success_rate.toFixed(1)}%</p>
+                <p className="text-sm font-medium text-purple-200">同步成功率</p>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-3xl font-bold text-white"
+                >
+                  {stats.sync_success_rate.toFixed(1)}%
+                </motion.p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </div>
             </div>
-          </div>
-        </div>
+            <div className="mt-4 h-1 bg-purple-500/30 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${stats.sync_success_rate}%` }}
+                transition={{ delay: 0.8, duration: 1 }}
+                className="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full"
+              />
+            </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* 添加账号按钮 */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        whileHover={{ scale: 1.02, y: -2 }}
+        className="bg-gradient-to-br from-black/40 to-gray-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 mb-10 shadow-xl hover:shadow-white/10 transition-all"
+      >
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold mb-2">绑定新账号</h2>
-            <p className="text-gray-600">通过X平台OAuth 2.0安全授权绑定您的账号，使用官方API获取运营数据</p>
+            <h2 className="text-2xl font-bold text-white mb-3 flex items-center">
+              <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center mr-3">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.067 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
+                </svg>
+              </div>
+              智能授权绑定
+            </h2>
+            <p className="text-gray-300">通过X平台OAuth 2.0安全授权和AI驱动的API实时获取运营数据，支持自动化管理</p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={startXOAuth}
             disabled={isBinding}
-            className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
+            className="bg-gradient-to-r from-black to-gray-800 text-white px-8 py-4 rounded-xl hover:from-gray-800 hover:to-black disabled:from-gray-600 disabled:to-gray-700 transition-all flex items-center space-x-3 shadow-xl font-medium"
           >
             {isBinding ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                 <span>授权中...</span>
               </>
             ) : (
@@ -508,108 +585,176 @@ export default function XAccountManager() {
                 <span>绑定X账号</span>
               </>
             )}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* 账号列表 */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">已绑定的账号</h2>
-        
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
-          </div>
-        ) : accounts.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="bg-gradient-to-br from-indigo-600/20 to-purple-800/20 backdrop-blur-md border border-indigo-500/30 rounded-2xl shadow-xl overflow-hidden"
+      >
+        <div className="px-8 py-6 border-b border-white/10">
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center mr-3">
+              <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">暂无绑定的X账号</h3>
-            <p className="text-gray-500 mb-4">点击上方按钮绑定您的第一个X账号</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {accounts.map((account) => (
-              <div key={account.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center">
-                    {account.avatar_url && (
-                      <img
-                        src={account.avatar_url}
-                        alt={account.display_name}
-                        className="w-12 h-12 rounded-full mr-3"
-                      />
-                    )}
-                    <div>
-                      <div className="flex items-center">
-                        <h3 className="font-semibold">{account.display_name}</h3>
-                        {account.verified && (
-                          <span className="ml-1 text-blue-500">✓</span>
-                        )}
-                        {account.is_primary && (
-                          <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">主账号</span>
-                        )}
+            已绑定的账号
+          </h2>
+        </div>
+        
+        <div className="p-8">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-3 border-indigo-500 border-t-transparent"></div>
+            </div>
+          ) : accounts.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-16"
+            >
+              <div className="w-24 h-24 bg-indigo-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-indigo-500/20">
+                <svg className="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-3">暂无绑定的X账号</h3>
+              <p className="text-gray-400 mb-6">点击上方智能授权按钮绑定您的第一个X账号</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startXOAuth}
+                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-medium"
+              >
+                立即绑定账号
+              </motion.button>
+            </motion.div>
+          ) : (
+            <div className="space-y-6">
+              {accounts.map((account, index) => (
+                <motion.div
+                  key={account.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center">
+                      {account.avatar_url ? (
+                        <img
+                          src={account.avatar_url}
+                          alt={account.display_name}
+                          className="w-16 h-16 rounded-2xl mr-4 border-2 border-white/20"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mr-4 flex items-center justify-center">
+                          <span className="text-white text-xl font-bold">
+                            {account.display_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center mb-2">
+                          <h3 className="text-xl font-semibold text-white">{account.display_name}</h3>
+                          {account.verified && (
+                            <span className="ml-2 text-blue-400">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          )}
+                          {account.is_primary && (
+                            <span className="ml-3 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs rounded-full font-medium">主账号</span>
+                          )}
+                        </div>
+                        <p className="text-gray-300 text-sm">@{account.username}</p>
                       </div>
-                      <p className="text-sm text-gray-600">@{account.username}</p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <span className={`px-4 py-2 text-sm font-medium rounded-xl ${
+                        account.binding_status === 'active' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
+                        account.binding_status === 'pending' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
+                        account.binding_status === 'error' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
+                        'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+                      }`}>
+                        {account.binding_status === 'active' ? '活跃' :
+                         account.binding_status === 'pending' ? '待同步' :
+                         account.binding_status === 'error' ? '错误' : '过期'}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      account.binding_status === 'active' ? 'bg-green-100 text-green-800' :
-                      account.binding_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      account.binding_status === 'error' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {account.binding_status === 'active' ? '活跃' :
-                       account.binding_status === 'pending' ? '待同步' :
-                       account.binding_status === 'error' ? '错误' : '过期'}
-                    </span>
+                  
+                  <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-blue-500/10 rounded-xl border border-blue-500/20 text-center"
+                    >
+                      <p className="text-2xl font-bold text-blue-300">{formatNumber(account.followers_count)}</p>
+                      <p className="text-xs text-gray-400 mt-1">粉丝</p>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-green-500/10 rounded-xl border border-green-500/20 text-center"
+                    >
+                      <p className="text-2xl font-bold text-green-300">{formatNumber(account.following_count)}</p>
+                      <p className="text-xs text-gray-400 mt-1">关注</p>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-purple-500/10 rounded-xl border border-purple-500/20 text-center"
+                    >
+                      <p className="text-2xl font-bold text-purple-300">{formatNumber(account.tweets_count)}</p>
+                      <p className="text-xs text-gray-400 mt-1">推文</p>
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="p-4 bg-orange-500/10 rounded-xl border border-orange-500/20 text-center"
+                    >
+                      <p className="text-sm font-medium text-orange-300">
+                        {account.last_sync_at ? formatDate(account.last_sync_at) : '从未'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">最后同步</p>
+                    </motion.div>
                   </div>
-                </div>
-                
-                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">粉丝:</span>
-                    <span className="font-medium">{formatNumber(account.followers_count)}</span>
+                  
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => syncAccount(account.id)}
+                      className="px-6 py-3 bg-blue-600/20 border border-blue-500/30 text-blue-300 rounded-xl hover:bg-blue-600/30 transition-all flex items-center font-medium"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      同步数据(X API)
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => deleteAccount(account.id)}
+                      className="px-6 py-3 bg-red-600/20 border border-red-500/30 text-red-300 rounded-xl hover:bg-red-600/30 transition-all flex items-center font-medium"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      解除绑定
+                    </motion.button>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">关注:</span>
-                    <span className="font-medium">{formatNumber(account.following_count)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">推文:</span>
-                    <span className="font-medium">{formatNumber(account.tweets_count)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">最后同步:</span>
-                    <span className="font-medium">
-                      {account.last_sync_at ? formatDate(account.last_sync_at) : '从未'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="mt-4 flex space-x-2">
-                  <button
-                    onClick={() => syncAccount(account.id)}
-                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition-colors"
-                  >
-                    同步数据(X API)
-                  </button>
-                  <button
-                    onClick={() => deleteAccount(account.id)}
-                    className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200 transition-colors"
-                  >
-                    解除绑定
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
     </div>
   );
 }

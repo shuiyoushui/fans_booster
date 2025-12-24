@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import XAccountManager from '@/components/XAccountManager';
+import { motion } from 'framer-motion';
 
 export default function XAccountsPage() {
   const [mounted, setMounted] = useState(false);
@@ -15,25 +16,45 @@ export default function XAccountsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
       {/* Header */}
-      <header className="bg-white shadow">
+      <header className="bg-black/30 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">X平台账号管理</h1>
+              <motion.h1 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-2xl font-bold text-white flex items-center"
+              >
+                <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center mr-3">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.067 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
+                  </svg>
+                </div>
+                X平台账号管理
+              </motion.h1>
             </div>
             <div className="flex items-center space-x-4">
-              <a href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
+              <motion.a
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                href="/dashboard" 
+                className="text-sm text-gray-300 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-all flex items-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
                 返回仪表板
-              </a>
+              </motion.a>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="py-8">
+      <main>
         <XAccountManager />
       </main>
     </div>
