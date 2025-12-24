@@ -1,21 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 function XOAuthMockCallbackContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('');
+  const [params, setParams] = useState<{ state?: string; code?: string }>({});
 
   useEffect(() => {
+    // 添加调试信息
+    console.log('=== Mock Callback Page Loaded ===');
+    
+    // 直接从window.location获取参数，避免useSearchParams的问题
+    const searchParams = new URLSearchParams(window.location.search);
+    const state = searchParams.get('state') || '';
+    const code = searchParams.get('code') || '';
+    
+    setParams({ state, code });
+    console.log('Search params:', searchParams.toString());
+    console.log('Extracted params:', { state: state?.substring(0, 8) + '...', code: code?.substring(0, 20) + '...' });
+    
     const processMockCallback = async () => {
       try {
-        const state = searchParams.get('state');
-        const code = searchParams.get('code');
-
         if (!state || !code) {
           throw new Error('Missing mock callback parameters');
         }
@@ -33,21 +40,30 @@ function XOAuthMockCallbackContent() {
 
         // 模拟自动关闭
         setTimeout(() => {
+          console.log('Attempting to close window...');
+          if (window.opener) {
+            window.opener.postMessage({ success: true, state }, '*');
+          }
           window.close();
         }, 2000);
 
       } catch (error) {
+        console.error('Mock callback error:', error);
         setStatus('error');
         setMessage(error instanceof Error ? error.message : '未知错误');
         
         setTimeout(() => {
+          if (window.opener) {
+            window.opener.postMessage({ success: false, error: message }, '*');
+          }
           window.close();
         }, 3000);
       }
     };
 
-    processMockCallback();
-  }, [searchParams]);
+    // 延迟执行以确保页面完全加载
+    setTimeout(processMockCallback, 100);
+  }, []);
 
   const getStatusIcon = () => {
     switch (status) {
@@ -92,13 +108,26 @@ function XOAuthMockCallbackContent() {
         <p className={`text-gray-600 mb-4 ${
           status === 'processing' ? 'animate-pulse' : ''
         }`}>
-          {message}
+          {message || '正在处理授权回调...'}
         </p>
+        
+        {/* 显示参数信息 */}
+        {(params.state || params.code) && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-xs">
+            <p className="text-gray-600">
+              State: {params.state?.substring(0, 12)}...
+            </p>
+            <p className="text-gray-600">
+              Code: {params.code?.substring(0, 20)}...
+            </p>
+          </div>
+        )}
         
         {status === 'processing' && (
           <div className="space-y-2 text-sm text-gray-500">
             <p>🔧 开发环境模拟流程</p>
             <p>此窗口将在处理完成后自动关闭</p>
+            <p className="text-xs text-gray-400 mt-2">调试信息：检查控制台日志</p>
           </div>
         )}
         
