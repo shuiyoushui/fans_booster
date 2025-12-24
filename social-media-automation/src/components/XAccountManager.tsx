@@ -40,6 +40,7 @@ export default function XAccountManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBinding, setIsBinding] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [useRealX, setUseRealX] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -114,7 +115,8 @@ export default function XAccountManager() {
       }
 
       // 1. 获取授权URL
-      const urlResponse = await fetch('/api/x/auth/url', {
+      const authEndpoint = useRealX ? '/api/x/auth/url/real' : '/api/x/auth/url';
+      const urlResponse = await fetch(authEndpoint, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -132,7 +134,14 @@ export default function XAccountManager() {
       // 2. 临时存储token供回调页面使用
       sessionStorage.setItem('temp_auth_token', token);
 
-      // 3. 打开授权窗口
+      // 3. 显示提示信息
+      if (useRealX && urlData.is_real_x) {
+        toast.success('正在跳转到X平台授权页面...', { duration: 3000 });
+      } else {
+        toast.success('正在打开模拟授权页面...', { duration: 2000 });
+      }
+
+      // 4. 打开授权窗口
       const authWindow = window.open(
         urlData.auth_url,
         'x_oauth',
@@ -553,18 +562,55 @@ export default function XAccountManager() {
         whileHover={{ scale: 1.02, y: -2 }}
         className="bg-gradient-to-br from-black/40 to-gray-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-8 mb-10 shadow-xl hover:shadow-white/10 transition-all"
       >
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-3 flex items-center">
-              <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center mr-3">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.067 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
-                </svg>
-              </div>
-              智能授权绑定
-            </h2>
-            <p className="text-gray-300">通过X平台OAuth 2.0安全授权和AI驱动的API实时获取运营数据，支持自动化管理</p>
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-3 flex items-center">
+            <div className="w-8 h-8 bg-black rounded-xl flex items-center justify-center mr-3">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.067 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/>
+              </svg>
+            </div>
+            智能授权绑定
+          </h2>
+          
+          {/* 授权模式选择器 */}
+          <div className="mb-4">
+            <label className="text-sm text-gray-400 mb-2 block">选择授权模式：</label>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setUseRealX(false)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  !useRealX 
+                    ? 'bg-white/10 text-white border border-white/20' 
+                    : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+                }`}
+              >
+                🧪 模拟授权（开发测试）
+              </button>
+              <button
+                onClick={() => setUseRealX(true)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  useRealX 
+                    ? 'bg-white/10 text-white border border-white/20' 
+                    : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10'
+                }`}
+              >
+                🔐 真实X授权
+              </button>
+            </div>
+            {useRealX && (
+              <p className="text-xs text-yellow-400 mt-2">
+                ⚠️ 将跳转到X平台官方授权页面，需要配置真实的X开发者凭据
+              </p>
+            )}
           </div>
+          
+          <p className="text-gray-300">
+            {useRealX 
+              ? "通过X平台OAuth 2.0安全授权，连接真实的X账号和数据" 
+              : "开发环境模拟授权，用于测试功能流程（无需真实X账号）"
+            }
+          </p>
+          
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
