@@ -36,7 +36,7 @@ function calculateTargetBudget(
   quality: 'standard' | 'premium' | 'targeted' | 'instant' | 'longterm' = 'standard'
 ) {
   const difference = Math.max(0, targetQuantity - currentQuantity);
-  const priceCategory = fansGurusServicePrices[serviceType]?.[quality];
+  const priceCategory = fansGurusServicePrices[serviceType as keyof typeof fansGurusServicePrices]?.[quality as keyof typeof fansGurusServicePrices[keyof typeof fansGurusServicePrices]];
   
   if (!priceCategory || difference <= 0) {
     return {
@@ -92,15 +92,26 @@ export async function POST(request: NextRequest) {
     }
 
     const budgetAnalysis = {
-      targets: [],
+      targets: [] as Array<{
+        targetId: string;
+        serviceType: string;
+        currentQuantity: number;
+        targetQuantity: number;
+        gap: number;
+        budget: any;
+        canAfford: boolean;
+        urgency: string;
+        recommendation?: string;
+      }>,
       summary: {
         totalTargets: targets.length,
         totalRequired: 0,
         totalAffordable: 0,
+        affordableTargets: 0,
         remainingBalance: currentBalance,
         budgetGap: 0,
-        affordableTargets: 0,
-        recommendations: []
+        affordablePackages: [] as string[],
+        recommendations: [] as string[]
       }
     };
 
