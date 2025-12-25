@@ -88,13 +88,7 @@ function calculateGapAndSuggestions(
     
     if (priceCategories) {
       // 生成不同质量等级的套餐选项
-      const packages: Array<{
-        id: string;
-        name: string;
-        quantity: number;
-        price: number;
-        estimatedTime: string;
-      }> = [];
+      const packages: any[] = [];
       
       Object.entries(priceCategories).forEach(([quality, priceInfo]) => {
         const packageQuantity = Math.min(
@@ -109,7 +103,9 @@ function calculateGapAndSuggestions(
             name: `${packageQuantity} ${serviceType} (${quality})`,
             quantity: packageQuantity,
             price: packageCost,
-            estimatedTime: priceInfo.time
+            estimatedTime: priceInfo.time,
+            quality: quality,
+            rate: priceInfo.rate
           });
         }
       });
@@ -220,7 +216,7 @@ export async function POST(request: NextRequest) {
         action: 'PLACE_ORDER',
         urgency: analysis.percentageGap > 50 ? 'HIGH' : analysis.percentageGap > 20 ? 'MEDIUM' : 'LOW',
         estimatedCost: analysis.budgetAnalysis.totalRequired,
-        suggestedPackage: analysis.suggestedOrders[0]?.recommendedPackages.find(pkg => pkg.name.includes('standard')) || analysis.suggestedOrders[0]?.recommendedPackages[0],
+        suggestedPackage: (analysis.suggestedOrders[0]?.recommendedPackages as any[]).find((pkg: any) => pkg.quality === 'standard') || (analysis.suggestedOrders[0]?.recommendedPackages as any[])[0],
         budgetGap: analysis.budgetAnalysis.budgetGap,
         canAfford: analysis.budgetAnalysis.budgetGap <= 0,
         affordablePackages: analysis.budgetAnalysis.affordablePackages
