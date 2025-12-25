@@ -24,18 +24,34 @@ function XOAuthCallbackInner() {
           throw new Error('缺少必要的参数');
         }
 
-        // 获取父窗口的token
-        const opener = window.opener;
-        if (!opener) {
-          throw new Error('请通过授权窗口访问此页面');
+        // 多重fallback机制获取token
+        let token: string | null = null;
+        
+        // 1. 首先尝试从URL参数获取（最可靠）
+        const urlToken = searchParams.get('token');
+        if (urlToken) {
+          token = urlToken;
+          console.log('Token found in URL parameters');
         }
-
-        // 获取localStorage中的token（需要从父窗口传递）
-        // 由于安全限制，我们需要通过postMessage从父窗口获取token
-        const token = sessionStorage.getItem('temp_auth_token');
+        
+        // 2. fallback到sessionStorage
+        if (!token) {
+          token = sessionStorage.getItem('temp_auth_token');
+          if (token) {
+            console.log('Token found in sessionStorage');
+          }
+        }
+        
+        // 3. 最后尝试从localStorage获取
+        if (!token) {
+          token = localStorage.getItem('token');
+          if (token) {
+            console.log('Token found in localStorage');
+          }
+        }
         
         if (!token) {
-          throw new Error('认证信息缺失');
+          throw new Error('认证信息缺失：无法获取有效的认证令牌');
         }
 
         // 调用回调API

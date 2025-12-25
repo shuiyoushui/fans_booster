@@ -62,8 +62,8 @@ export class XOAuthFlowManager {
   /**
    * 生成OAuth 2.0授权URL - 生产环境
    */
-  async generateAuthUrl(userId?: string): Promise<{ url: string; state: string }> {
-    console.log('PROD MODE: Generating real X OAuth URL for user:', userId);
+  async generateAuthUrl(userId?: string, token?: string): Promise<{ url: string; state: string }> {
+    console.log('PROD MODE: Generating real X OAuth URL for user:', userId, { hasToken: !!token });
     
     const state = this.generateState(userId);
     const codeVerifier = this.generateCodeVerifier();
@@ -80,11 +80,17 @@ export class XOAuthFlowManager {
     // 保存state到数据库或Redis（这里简化为内存存储，生产环境需要持久化）
     this.saveState(stateData);
 
+    // 构建回调URL，添加token参数
+    const redirectUri = new URL(this.config.redirectUri);
+    if (token) {
+      redirectUri.searchParams.set('token', token);
+    }
+
     // 构建真实的X平台授权URL
     const authParams = new URLSearchParams({
       response_type: 'code',
       client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
+      redirect_uri: redirectUri.toString(),
       scope: this.config.scopes.join(' '),
       state: state,
       code_challenge: codeChallenge,
@@ -97,7 +103,8 @@ export class XOAuthFlowManager {
       state: state.substring(0, 8) + '...',
       userId: userId,
       urlLength: authUrl.length,
-      redirectUri: this.config.redirectUri
+      redirectUri: redirectUri.toString(),
+      hasToken: !!token
     });
 
     return { url: authUrl, state };

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Token Test</title>
+</head>
+<body>
+    <h1>OAuth Token Test</h1>
+    
+    <div>
+        <h2>当前URL参数解析：</h2>
+        <div id="params"></div>
+    </div>
+    
+    <div>
+        <h2>Token获取测试：</h2>
+        <div id="token-test"></div>
+    </div>
+    
+    <script>
+        // 解析当前URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramsDiv = document.getElementById('params');
+        
+        let paramsHtml = '<ul>';
+        for (const [key, value] of urlParams) {
+            paramsHtml += `<li><strong>${key}:</strong> ${value}</li>`;
+        }
+        paramsHtml += '</ul>';
+        paramsDiv.innerHTML = paramsHtml;
+        
+        // 测试多重fallback机制获取token
+        const tokenTestDiv = document.getElementById('token-test');
+        let token = null;
+        let source = '';
+        
+        // 1. 从URL参数获取
+        if (urlParams.get('token')) {
+            token = urlParams.get('token');
+            source = 'URL参数';
+        }
+        
+        // 2. fallback到sessionStorage
+        if (!token && sessionStorage.getItem('temp_auth_token')) {
+            token = sessionStorage.getItem('temp_auth_token');
+            source = 'sessionStorage';
+        }
+        
+        // 3. 最后尝试从localStorage获取
+        if (!token && localStorage.getItem('token')) {
+            token = localStorage.getItem('token');
+            source = 'localStorage';
+        }
+        
+        if (token) {
+            tokenTestDiv.innerHTML = `
+                <p style="color: green;"><strong>✅ Token获取成功</strong></p>
+                <p><strong>来源:</strong> ${source}</p>
+                <p><strong>Token预览:</strong> ${token.substring(0, 50)}...</p>
+                <p><strong>Token长度:</strong> ${token.length}</p>
+            `;
+        } else {
+            tokenTestDiv.innerHTML = `
+                <p style="color: red;"><strong>❌ Token获取失败</strong></p>
+                <p>所有fallback机制都未能获取到token</p>
+            `;
+        }
+    </script>
+</body>
+</html>

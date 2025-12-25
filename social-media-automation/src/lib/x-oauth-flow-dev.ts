@@ -59,8 +59,8 @@ export class XOAuthFlowManagerDev {
   /**
    * 生成OAuth 2.0授权URL - 开发环境模拟
    */
-  async generateAuthUrl(userId?: string, useRealX: boolean = false): Promise<{ url: string; state: string }> {
-    console.log('DEV MODE: Generating OAuth URL for user:', userId, { useRealX });
+  async generateAuthUrl(userId?: string, useRealX: boolean = false, token?: string): Promise<{ url: string; state: string }> {
+    console.log('DEV MODE: Generating OAuth URL for user:', userId, { useRealX, hasToken: !!token });
     
     const state = this.generateState(userId);
     const codeVerifier = this.generateCodeVerifier();
@@ -84,10 +84,17 @@ export class XOAuthFlowManagerDev {
     if (useRealX && this.config.clientId !== 'mock_client_id') {
       // 如果有真实配置，使用真实的X平台授权URL
       const X_OAUTH_BASE_URL = 'https://twitter.com/i/oauth2/authorize';
+      
+      // 构建回调URL，添加token参数
+      const redirectUri = new URL(this.config.redirectUri);
+      if (token) {
+        redirectUri.searchParams.set('token', token);
+      }
+      
       const authParams = new URLSearchParams({
         response_type: 'code',
         client_id: this.config.clientId,
-        redirect_uri: this.config.redirectUri,
+        redirect_uri: redirectUri.toString(),
         scope: this.config.scopes.join(' '),
         state: state,
         code_challenge: codeChallenge,
@@ -99,17 +106,25 @@ export class XOAuthFlowManagerDev {
         state: state.substring(0, 8) + '...',
         userId: userId,
         urlLength: authUrl.length,
-        redirectUri: this.config.redirectUri
+        redirectUri: redirectUri.toString(),
+        hasToken: !!token
       });
     } else {
       // 开发环境使用模拟授权URL
-      authUrl = `http://localhost:3000/auth/x/mock-callback?state=${state}&code=mock_code_${Date.now()}`;
+      const mockParams = new URLSearchParams({
+        state: state,
+        code: `mock_code_${Date.now()}`
+      });
+      if (token) {
+        mockParams.set('token', token);
+      }
+      authUrl = `http://localhost:3000/auth/x/mock-callback?${mockParams.toString()}`;
 
       console.log('DEV MODE: Mock OAuth URL generated:', {
         state: state.substring(0, 8) + '...',
         userId: userId,
         urlLength: authUrl.length,
-        redirectUri: this.config.redirectUri
+        hasToken: !!token
       });
     }
 

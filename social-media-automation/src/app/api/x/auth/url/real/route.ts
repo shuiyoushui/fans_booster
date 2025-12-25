@@ -45,8 +45,11 @@ export async function GET(request: NextRequest) {
     
     console.log('Generating real X OAuth URL for user:', user.userId);
     
-    // 生成真实的授权URL
-    const { url, state } = await oauthManager.generateAuthUrl(user.userId);
+    // 从请求头获取token（用于传递到回调）
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    // 生成真实的授权URL，传递token用于回调验证
+    const { url, state } = await oauthManager.generateAuthUrl(user.userId, token);
     
     console.log('Real X OAuth URL generated successfully:', {
       urlLength: url.length,

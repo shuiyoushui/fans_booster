@@ -20,13 +20,17 @@ export async function GET(request: NextRequest) {
     const { user } = auth;
     console.log('Auth validated for user:', user.userId);
     
-    // 创建OAuth流程管理器
-    const oauthManager = createXOAuthFlowManager();
+    // 从请求头获取token（用于传递到回调）
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
-    console.log('Generating OAuth URL for user:', user.userId);
+    // 创建OAuth流程管理器 - 强制使用开发环境以测试token传递
+    const { XOAuthFlowManagerDev, DEFAULT_X_OAUTH_CONFIG } = await import('@/lib/x-oauth-flow-dev');
+    const oauthManager = new XOAuthFlowManagerDev(DEFAULT_X_OAUTH_CONFIG);
     
-    // 生成授权URL
-    const { url, state } = await oauthManager.generateAuthUrl(user.userId);
+    console.log('Generating OAuth URL for user:', user.userId, 'with token:', !!token);
+    
+    // 生成授权URL，传递token用于回调验证
+    const { url, state } = await oauthManager.generateAuthUrl(user.userId, true, token);
     
     console.log('OAuth URL generated successfully:', {
       urlLength: url.length,
