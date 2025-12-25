@@ -187,6 +187,12 @@ src/
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 开启 Pull Request
 
+## 🎬 项目演示
+
+详细的项目演示和功能展示请查看 [Demo文档](./docs/demo.md)
+
+**在线演示地址**: https://3m2nf7wdnr.coze.site
+
 ## 📝 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
