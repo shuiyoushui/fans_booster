@@ -2,6 +2,10 @@
 
 专业的社交媒体账号管理和自动化增长平台，支持X(Twitter)平台账号绑定、数据监控、目标比对和自动增长服务。
 
+[![GitHub stars](https://img.shields.io/github/stars/shuiyoushui/fans_booster)](https://github.com/shuiyoushui/fans_booster)
+[![GitHub forks](https://img.shields.io/github/forks/shuiyoushui/fans_booster)](https://github.com/shuiyoushui/fans_booster)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## 🚀 功能特性
 
 ### 核心功能
@@ -12,11 +16,43 @@
 - **预算管理** - 灵活的预算分配和消费管理
 
 ### 技术特性
-- **OAuth 2.0认证** - 安全的平台授权机制，支持跨窗口token传递
+- **OAuth 2.0认证** - 安全的平台授权机制，支持跨窗口token传递✨
 - **实时数据同步** - 定期同步账号数据，确保信息准确性
-- **智能错误处理** - 完善的错误处理和重试机制
-- **系统监控** - 健康检查和性能监控
-- **响应式设计** - 支持桌面和移动端访问
+- **智能错误处理** - 完善的错误处理和重试机制🔧
+- **系统监控** - 健康检查和性能监控📊
+- **响应式设计** - 支持桌面和移动端访问📱
+
+### 最新功能 🆕
+- ✅ **OAuth跨窗口token传递修复** - 解决授权回调认证信息缺失问题
+- ✅ **多重fallback机制** - 确保token传递的可靠性
+- ✅ **统一错误处理系统** - 提升用户体验和系统稳定性
+- ✅ **系统健康监控** - 实时监控API状态和系统性能
+
+## 🎯 核心功能展示
+
+### 📊 仪表盘
+- 实时账号数据概览
+- 增长目标进度跟踪
+- 预算使用情况统计
+- 系统状态监控面板
+
+### 👥 账号管理
+- X平台账号快速绑定
+- 账号数据实时同步
+- 多账号统一管理
+- 批量操作支持
+
+### 🎯 增长服务
+- 智能粉丝增长套餐
+- 互动提升服务
+- 内容推广工具
+- 自动下单和跟踪
+
+### 📈 数据分析
+- 粉丝增长趋势分析
+- 互动率统计
+- 最佳发帖时间推荐
+- 目标达成度分析
 
 ## 🛠 技术栈
 
@@ -47,7 +83,7 @@
 ### 快速开始
 1. 克隆仓库
 ```bash
-git clone https://github.com/yourusername/social-media-automation.git
+git clone https://github.com/shuiyoushui/fans_booster.git
 cd social-media-automation
 ```
 
@@ -83,14 +119,14 @@ npm start
 # X平台OAuth配置
 X_CLIENT_ID=your_x_client_id
 X_CLIENT_SECRET=your_x_client_secret
-X_REDIRECT_URI=https://yourdomain.com/auth/x/callback
+X_REDIRECT_URI=https://3m2nf7wdnr.coze.site/auth/x/callback
 
 # API密钥
 X_API_KEY=your_x_api_key
 FANSGURUS_API_KEY=your_fansgurus_api_key
 
 # 应用配置
-NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_APP_URL=https://3m2nf7wdnr.coze.site
 JWT_SECRET=your_jwt_secret
 
 # 数据库
@@ -165,7 +201,7 @@ src/
 
 如有问题或建议，请通过以下方式联系：
 
-- 提交 [Issue](https://github.com/yourusername/social-media-automation/issues)
+- 提交 [Issue](https://github.com/shuiyoushui/fans_booster/issues)
 - 发送邮件至：your-email@example.com
 
 ---
