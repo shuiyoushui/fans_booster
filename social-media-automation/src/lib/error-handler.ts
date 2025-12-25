@@ -1,4 +1,4 @@
-import { logError, logInfo, logger } from '@/lib/logger';
+import { logError as logToConsole, logInfo, logger } from '@/lib/logger';
 
 /**
  * 统一错误处理系统
@@ -253,7 +253,7 @@ export class ErrorHandler {
     };
 
     // 这里可以集成到外部日志服务
-    logError('[AppError]', JSON.stringify(logEntry, null, 2););
+    logToConsole('[AppError]', JSON.stringify(logEntry, null, 2));
   }
 
   public createErrorResponse(error: any): any {

@@ -92,7 +92,16 @@ export async function POST(request: NextRequest) {
     }
 
     const budgetAnalysis = {
-      targets: [],
+      targets: [] as Array<{
+        targetId: string;
+        serviceType: string;
+        currentQuantity: number;
+        targetQuantity: number;
+        gap: number;
+        budget: any;
+        canAfford: boolean;
+        urgency: string;
+      }>,
       summary: {
         totalTargets: targets.length,
         totalRequired: 0,
@@ -100,7 +109,7 @@ export async function POST(request: NextRequest) {
         remainingBalance: currentBalance,
         budgetGap: 0,
         affordableTargets: 0,
-        recommendations: []
+        recommendations: [] as string[]
       }
     };
 
